@@ -367,13 +367,12 @@ def main():
                 y_uav[episode][step_count][i] = uav.y
                 z_uav[episode][step_count][i] = uav.h
         
-        print(f"Episode {episode} 完成，奖励: {episode_reward:.2f}，"
-              f"完成目标: {info['completed_targets']}/{user_num}，"
-              f"碰撞次数: {info['collision_count']}")
+        print(f"Episode {episode} 完成，奖励: {episode_reward:.2f}" 
+              f"完成目标: {info['completed_targets']}/{user_num}")
         
         # 回合结束统计
         ep_rewards.append(episode_reward)
-        ep_collision.append(1 if info.get('collision', False) else 0)
+        # ep_collision.append(1 if info.get('collision', False) else 0)
         ep_completed_targets.append(info.get('completed_targets', 0))
         ep_exploration_noise.append(current_noise)
         

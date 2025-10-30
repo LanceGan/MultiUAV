@@ -289,7 +289,7 @@ class MultiUAVWorld(object):
         uav_locations_pre = np.array([[uav.x, uav.y] for uav in self.UAVs])
         
         # 执行动作
-        collision_occurred = self._execute_actions(actions, uav_locations_pre)
+        self._execute_actions(actions, uav_locations_pre)
         
         # 当前位置
         uav_locations = np.array([[uav.x, uav.y] for uav in self.UAVs])
@@ -302,8 +302,7 @@ class MultiUAVWorld(object):
         
         # 计算奖励
         rewards = self._compute_rewards(
-            uav_locations, uav_locations_pre, collision_occurred
-        )
+            uav_locations, uav_locations_pre)
         
         # 检查是否完成
         dones = self._check_done()
@@ -314,7 +313,7 @@ class MultiUAVWorld(object):
         # 额外信息
         info = {
             'success': self.terminal,
-            'collision': collision_occurred,
+            # 'collision': collision_occurred,
             'completed_targets': len(self.completed_targets),
             'total_targets': self.user_num,
             'collision_count': self.collision_count
@@ -324,7 +323,7 @@ class MultiUAVWorld(object):
 
     def _execute_actions(self, actions, uav_locations_pre):
         """执行所有无人机的动作"""
-        collision_occurred = False
+        # collision_occurred = False
         fa_total = 0.0
         
         # 执行动作
@@ -342,15 +341,15 @@ class MultiUAVWorld(object):
                     uav.y = uav_locations_pre[i][1]
         
         # 🔥 检查碰撞
-        collision_occurred = self._check_collisions()
-        if collision_occurred:
-            self.collision_count += 1
-            # 碰撞后回退到上一位置
-            for i, uav in enumerate(self.UAVs):
-                uav.x = uav_locations_pre[i][0]
-                uav.y = uav_locations_pre[i][1]
+        # collision_occurred = self._check_collisions()
+        # if collision_occurred:
+        #     self.collision_count += 1
+        #     # 碰撞后回退到上一位置
+        #     for i, uav in enumerate(self.UAVs):
+        #         uav.x = uav_locations_pre[i][0]
+        #         uav.y = uav_locations_pre[i][1]
         
-        return collision_occurred
+        # return collision_occurred
 
     def _check_collisions(self):
         """检查无人机之间是否碰撞"""
@@ -431,7 +430,7 @@ class MultiUAVWorld(object):
             # 所有目标完成，前往终点
             self.uav_targets[uav_id] = None
 
-    def _compute_rewards(self, uav_locations, uav_locations_pre, collision):
+    def _compute_rewards(self, uav_locations, uav_locations_pre):
         """计算每个无人机的奖励"""
         rewards = []
         
@@ -456,8 +455,8 @@ class MultiUAVWorld(object):
                     reward -= 10
             
             # 2. 碰撞惩罚
-            if collision:
-                reward += self.COLLISION_PENALTY
+            # if collision:
+            #     reward += self.COLLISION_PENALTY
             
             # 3. 接近其他无人机的惩罚（软避碰）
             for j in range(self.uav_num):
@@ -483,10 +482,10 @@ class MultiUAVWorld(object):
                     self._assign_next_target(i)    
             else:
                 # 前往终点奖励
-                print("UAV {} heading to end".format(i))
                 end_pos = np.array(self.end_loc)
                 distance = LA.norm(uav_locations[i] - end_pos)
                 if distance <= self.distance and not self.uav_reach_final[i]:
+                    print("UAV {} heading to end".format(i))
                     self.uav_reach_final[i] = True
                     reward += 1000
             
