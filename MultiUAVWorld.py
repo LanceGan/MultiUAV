@@ -6,7 +6,6 @@ from rural_world import Rural_world
 import radio_map_A2G as A2G
 import radio_map_G2A as G2A
 
-
 class MultiUAVWorld(object):
     """多无人机协同巡检环境"""
     
@@ -110,19 +109,24 @@ class MultiUAVWorld(object):
 
     def set_users(self):
         """加载用户位置（检查点）"""
-        self.Users = []
-        if os.path.exists(self.users_path):
-            with open(self.users_path, 'r') as f:
-                for line in f:
-                    if line.strip():
-                        user_loc = line.split()
-                        self.Users.append(User(
-                            float(user_loc[0]), 
-                            float(user_loc[1]), 
-                            float(user_loc[2])
-                        ))
+        self.Users =[]
+        if os.path.exists(self.users_path): # 读写文件 # 读入用户位置
+            f = open(self.users_path, 'r')
+            if f:
+                user_loc = f.readline()
+                user_loc = user_loc.split(' ')
+                self.Users.append(User(float(user_loc[0]), float(user_loc[1]),float(user_loc[2])))
+                # self.GT_loc[len(self.Users) - 1] = np.array(
+                #     [float(user_loc[0]), float(user_loc[1]), float(user_loc[2])])
+                while user_loc:
+                    user_loc = f.readline()
+                    if user_loc:
+                        user_loc = user_loc.split(' ')
+                        self.Users.append(User(float(user_loc[0]), float(user_loc[1]),float(user_loc[2])))
+                        # self.GT_loc[len(self.Users) - 1] = np.array([float(user_loc[0]), float(user_loc[1]), float(user_loc[2])])
+                f.close()
         else:
-            raise FileNotFoundError(f"Users file not found: {self.users_path}")
+            assert False, "Users file not found: " + self.users_path
         
     """初始化所有无人机位置"""
     def set_uavs_loc(self):
@@ -404,13 +408,12 @@ class MultiUAVWorld(object):
         """为无人机分配下一个目标"""
         # 找到未完成的目标
         remaining_targets = [
-            self.uav_traverse[uav_id][idx] - 1 
+            self.uav_traverse[uav_id][idx]
             for idx in range(len(self.uav_traverse[uav_id]))
-            if (self.uav_traverse[uav_id][idx] - 1) not in self.completed_targets
+            if self.uav_traverse[uav_id][idx] not in self.completed_targets
         ]
         
-        if remaining_targets:
-            
+        if remaining_targets: 
             # 分配最近的未完成目标
             uav_pos = np.array([self.UAVs[uav_id].x, self.UAVs[uav_id].y])
             min_dist = float('inf')
@@ -495,10 +498,10 @@ class MultiUAVWorld(object):
         
         # 6. 团队奖励（所有目标完成）
         if sum(self.uav_reach_final) == self.uav_num:
+            print("All UAVs reached the end!")
             team_bonus = 2000 + (self.T - self.t) * 10
             rewards = [r + team_bonus / self.uav_num for r in rewards]
             self.terminal = True
-        
         
         return rewards
 

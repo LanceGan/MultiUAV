@@ -183,13 +183,13 @@ def main():
 
     
     # 巡检顺序
-    trave_order = [1, 6, 2, 3, 5, 4]  # GA
+    # trave_order = [1, 6, 2, 3, 5, 4]  # GA
     
     print("="*70)
     print("MA-TD3 多无人机协同巡检训练")
     print("="*70)
     print(f"无人机数量: {uav_num}")
-    print(f"检查点数量: {len(trave_order)}")
+    print(f"检查点数量: {user_num}")
     print(f"安全距离: {safe_distance} m")
     print(f"通信范围: {comm_range} m")
     print(f"探索策略: {exploration_strategy}")
@@ -211,7 +211,7 @@ def main():
         end_loc=end_loc,
         users_name=f'results/datas/Users_{user_num}.txt',
         BS_loc=BS_loc, 
-        traverse_sequence=trave_order,
+        # traverse_sequence=trave_order,
         safe_distance=safe_distance,
         comm_range=comm_range,
         cooperative_mode='sequential'
@@ -434,7 +434,7 @@ def main():
         smoothed = get_moving_average(ep_completed_targets, N)
         ax3.plot(np.arange(len(smoothed)) + N, smoothed, 'b-',
                 linewidth=2, label=f'MA({N})')
-    ax3.axhline(y=len(trave_order), color='r', linestyle='--', 
+    ax3.axhline(y=len(user_num), color='r', linestyle='--', 
                label='Total Targets')
     ax3.set_xlabel('Episode')
     ax3.set_ylabel('Completed Targets')
