@@ -382,26 +382,26 @@ class MultiUAVWorld(object):
                     self.uav_data_sizes[i] = 0
                     self.uav_transmit_flags[i] = True
 
-    def _check_target_completion(self, uav_locations):
-        """检查目标完成情况"""
-        for i, uav_loc in enumerate(uav_locations):
-            if self.uav_targets[i] is not None:
-                target = self.Users[self.uav_targets[i]]
-                target_pos = np.array([target.x, target.y])
-                distance = LA.norm(uav_loc - target_pos)
+    # def _check_target_completion(self, uav_locations):
+    #     """检查目标完成情况"""
+    #     for i, uav_loc in enumerate(uav_locations):
+    #         if self.uav_targets[i] is not None:
+    #             target = self.Users[self.uav_targets[i]]
+    #             target_pos = np.array([target.x, target.y])
+    #             distance = LA.norm(uav_loc - target_pos)
                 
-                if distance <= self.distance:  # 到达巡检点
-                    # if self.uav_transmit_flags[i]:  # 且传输完成
-                        # 标记目标完成
-                    self.completed_targets.add(self.uav_targets[i])
-                    # 分配下一个目标
-                    self._assign_next_target(i)
-            else:
-                # 前往终点
-                end_pos = np.array(self.end_loc)
-                distance = LA.norm(uav_loc - end_pos)
-                if distance <= self.distance:
-                    self.uav_reach_final[i] = True
+    #             if distance <= self.distance:  # 到达巡检点
+    #                 # if self.uav_transmit_flags[i]:  # 且传输完成
+    #                     # 标记目标完成
+    #                 self.completed_targets.add(self.uav_targets[i])
+    #                 # 分配下一个目标
+    #                 self._assign_next_target(i)
+    #         else:
+    #             # 前往终点
+    #             end_pos = np.array(self.end_loc)
+    #             distance = LA.norm(uav_loc - end_pos)
+    #             if distance <= self.distance:
+    #                 self.uav_reach_final[i] = True
 
     def _assign_next_target(self, uav_id):
         
@@ -440,12 +440,15 @@ class MultiUAVWorld(object):
         for i in range(self.uav_num):
             reward = 0.0
             
-            # 1. 前进奖励
-            if self.uav_targets[i] is not None:
-                target_pos = np.array([
-                    self.Users[self.uav_targets[i]].x,
-                    self.Users[self.uav_targets[i]].y
-                ])
+            if not self.uav_reach_final[i]:
+                # 1. 前进奖励
+                if self.uav_targets[i] is not None:
+                    target_pos = np.array([
+                        self.Users[self.uav_targets[i]].x,
+                        self.Users[self.uav_targets[i]].y
+                    ])
+                else:
+                    target_pos = np.array(self.end_loc)
                 
                 dist_cur = LA.norm(uav_locations[i] - target_pos)
                 dist_pre = LA.norm(uav_locations_pre[i] - target_pos)
@@ -457,44 +460,44 @@ class MultiUAVWorld(object):
                 if abs(progress) < 0.05:
                     reward -= 10
             
-            # 2. 碰撞惩罚
-            # if collision:
-            #     reward += self.COLLISION_PENALTY
-            
-            # 3. 接近其他无人机的惩罚（软避碰）
-            for j in range(self.uav_num):
-                if i != j:
-                    dist_to_other = LA.norm(uav_locations[i] - uav_locations[j])
-                    if dist_to_other < self.safe_distance * 2:
-                        penalty = (self.safe_distance * 2 - dist_to_other) / self.safe_distance
-                        reward -= 20 * penalty
-            
-            # 4. 到达目标奖励
-            if self.uav_targets[i] is not None:
-                # 到达巡检点奖励
-                target_pos = np.array([
-                    self.Users[self.uav_targets[i]].x,
-                    self.Users[self.uav_targets[i]].y
-                ])
-                if LA.norm(uav_locations[i] - target_pos) <= self.distance:
-                    print("UAV {} reached target {}".format(i, self.uav_targets[i]))
-                    reward += 500 #到达目标点的奖励
-                    # 标记目标完成
-                    self.completed_targets.add(self.uav_targets[i])
-                    # 分配下一个目标
-                    self._assign_next_target(i)    
-            else:
-                # 前往终点奖励
-                end_pos = np.array(self.end_loc)
-                distance = LA.norm(uav_locations[i] - end_pos)
-                if distance <= self.distance and not self.uav_reach_final[i]:
-                    print("UAV {} heading to end".format(i))
-                    self.uav_reach_final[i] = True
-                    reward += 1000
-            
-            # 5. 时间惩罚
-            # reward -= 0.1
-            rewards.append(reward)
+                # 2. 碰撞惩罚
+                # if collision:
+                #     reward += self.COLLISION_PENALTY
+                
+                # 3. 接近其他无人机的惩罚（软避碰）
+                for j in range(self.uav_num):
+                    if i != j:
+                        dist_to_other = LA.norm(uav_locations[i] - uav_locations[j])
+                        if dist_to_other < self.safe_distance * 2:
+                            penalty = (self.safe_distance * 2 - dist_to_other) / self.safe_distance
+                            reward -= 20 * penalty
+                
+                # 4. 到达目标奖励
+                if self.uav_targets[i] is not None:
+                    # 到达巡检点奖励
+                    target_pos = np.array([
+                        self.Users[self.uav_targets[i]].x,
+                        self.Users[self.uav_targets[i]].y
+                    ])
+                    if LA.norm(uav_locations[i] - target_pos) <= self.distance:
+                        print("UAV {} reached target {}".format(i, self.uav_targets[i]))
+                        reward += 500 #到达目标点的奖励
+                        # 标记目标完成
+                        self.completed_targets.add(self.uav_targets[i])
+                        # 分配下一个目标
+                        self._assign_next_target(i)    
+                else:
+                    # 前往终点奖励
+                    end_pos = np.array(self.end_loc)
+                    distance = LA.norm(uav_locations[i] - end_pos)
+                    if distance <= self.distance and not self.uav_reach_final[i]:
+                        print("UAV {} heading to end".format(i))
+                        self.uav_reach_final[i] = True
+                        reward += 1000
+                
+                # 5. 时间惩罚
+                # reward -= 0.1
+                rewards.append(reward)
         
         # 6. 团队奖励（所有目标完成）
         if sum(self.uav_reach_final) == self.uav_num:

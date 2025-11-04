@@ -7,6 +7,9 @@ trajectory_file = r'results/trajectory/MultiUAV_uav2_ep9.npz'
 f = open(users_path, 'r')
 x0_user = []
 y0_user = []
+ini_loc = [14.76, 14.83]
+end_loc = [27.62, 23.47]
+
 if f:
     for j in range(user_num):
         user_loc = f.readline()
@@ -64,20 +67,19 @@ if __name__ == '__main__':
 
     
     for i in range(user_num): # 画用户位置
-        if i!=0 and i!= user_num-1:
-            if i == 1 :
-                plt.scatter(x0_user[i]*100, y0_user[i]*100, c='black', marker='^',s=60,label='Inspection Point')
-            else :
-                plt.scatter(x0_user[i]*100, y0_user[i]*100, c='black', marker='^',s=60)
+        if i == 0 :
+            plt.scatter(x0_user[i]*100, y0_user[i]*100, c='black', marker='^',s=60,label='Inspection Point')
         else :
-            if i == 0:
-                plt.scatter(x0_user[i]*100, y0_user[i]*100, c='red', marker='o',s=60,label='Start') #画起始点
-            else :
-                plt.scatter(x0_user[i]*100, y0_user[i]*100, c='orange', marker='o',s=60,label='End') #画终点
+            plt.scatter(x0_user[i]*100, y0_user[i]*100, c='black', marker='^',s=60)
+    
+    # 画起点和终点
+    plt.scatter(ini_loc[0]*100, ini_loc[1]*100, c='red', marker='o',s=60,label='Start')
+    plt.scatter(end_loc[0]*100, end_loc[1]*100, c='yellow', marker='s',s=60,label='End')
+                
     
     #绘制无人机轨迹
-    colors = ['cyan', 'lime', 'yellow', 'magenta', 'white', 
-              'lightblue', 'lightgreen', 'pink']
+    colors = ['blue', 'magenta', 'white', 
+              'lightblue', 'lightgreen', '']
     
     for i in range(uav_num):
         color = colors[i % len(colors)]

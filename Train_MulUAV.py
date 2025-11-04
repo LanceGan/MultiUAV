@@ -2,7 +2,7 @@
 """多无人机协同巡检训练脚本基于MA-TD3算法"""
 import torch
 from MATD3 import MATD3
-from MAReplayBuffer import MAReplayBuffer
+from MAReplayBuffer import MAReplayBufferIndividualReward
 from MultiUAVWorld import MultiUAVWorld
 import numpy as np
 import time
@@ -163,7 +163,7 @@ def main():
     
     # 环境参数
     user_num = 20
-    T = 1000
+    T = 2000
     Length = 40
     Width = 40
     
@@ -241,8 +241,8 @@ def main():
         train_path=train_path
     )
     
-    # 初始化Replay Buffer
-    replay_buffer = MAReplayBuffer(
+    # 初始化Replay Buffer (使用每智能体独立奖励存储)
+    replay_buffer = MAReplayBufferIndividualReward(
         max_size=buffer_size,
         global_state_dim=global_state_dim,
         total_action_dim=total_action_dim,
@@ -332,17 +332,24 @@ def main():
             next_global_state = np.concatenate(next_obs_list)
             all_actions = np.concatenate(actions)
             
-            # 团队奖励（平均）
-            team_reward = np.mean(rewards)
-            # all_done = all(dones)
+            # 团队奖励: 使用未到达终点的无人机的平均奖励，
+            # 避免已完成的无人机（其即时奖励可能变小）把团队平均拉低，
+            # 从而干扰仍在巡检的无人机的学习信号。
+            # alive_indices = [i for i in range(world.uav_num) if not world.uav_reach_final[i]]
+            # if len(alive_indices) > 0:
+            #     team_reward = np.mean([rewards[i] for i in alive_indices])
+            # else:
+            #     # 若所有无人机都已到达（极端情况），退回到对所有奖励取平均
+            #     team_reward = np.mean(rewards)
             
-            # 存储经验
+            
+            # 存储经验 (保存每个智能体的奖励和done标志)
             replay_buffer.add(
                 global_state,
                 all_actions,
-                team_reward,
+                np.array(rewards, dtype=np.float32),
                 next_global_state,
-                float(all(uav_reach))
+                np.array(uav_reach, dtype=np.float32)
             )
             
             # 训练网络,按一定频率训练
@@ -357,7 +364,7 @@ def main():
                 #                     train_metrics['q_value_mean'], 
                 #                     episode * T + step_count)
             
-            episode_reward += team_reward
+            episode_reward += np.sum(rewards)
             obs_list = next_obs_list
             # done = all_done
             
