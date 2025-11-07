@@ -23,7 +23,7 @@ def create_parser():
     parser.add_argument("--buffer", help="replay buffer大小", type=int, default=500000)
     parser.add_argument("--net_width", help="Actor网络宽度", type=int, default=256)
     parser.add_argument("--critic_width", help="Critic网络宽度", type=int, default=512)
-    parser.add_argument("--exploration_strategy", help="探索策略", type=str, default="adaptive")
+    parser.add_argument("--exploration_strategy", help="探索策略", type=str, default="linear")
     parser.add_argument("--min_exploration", help="最小探索噪声", type=float, default=0.2)
     parser.add_argument("--max_exploration", help="最大探索噪声", type=float, default=0.5)
     parser.add_argument("--safe_distance", help="安全距离", type=float, default=2.0)
@@ -387,6 +387,9 @@ def main():
         if exploration_strategy == "adaptive":
             explorer.update(episode_reward)
             current_noise = explorer.get_noise()
+        else:
+            current_noise = max(min_exploration, 
+                               max_exploration * (1 - episode / total_episode))
  
         # 定期保存
         if episode % 100 == 0 and episode >= 100:
@@ -417,72 +420,25 @@ def main():
     print(f"✅ 训练曲线已保存到: {train_path}training_results.png")
     print(f"✅ 模型已保存到: {model_path}\n")
     
-    # ==================== 绘制训练曲线 ====================
-    fig = plt.figure(figsize=(20, 12))
-    
-    # 1. 奖励曲线
-    ax1 = plt.subplot(2, 3, 1)
-    ax1.plot(range(len(ep_rewards)), ep_rewards, alpha=0.3, label='Episode Reward')
-    N = min(100, len(ep_rewards) // 4)
-    if N > 0:
-        smoothed = get_moving_average(ep_rewards, N)
-        ax1.plot(np.arange(len(smoothed)) + N, smoothed, 'r-', 
-                linewidth=2, label=f'MA({N})')
-    ax1.set_xlabel('Episode')
-    ax1.set_ylabel('Reward')
-    ax1.set_title('Training Reward')
-    ax1.legend()
-    ax1.grid(alpha=0.3)
-    
-    # 3. 完成目标数
-    ax3 = plt.subplot(2, 3, 3)
-    ax3.plot(ep_completed_targets, alpha=0.3, label='Completed')
-    if len(ep_completed_targets) > N:
-        smoothed = get_moving_average(ep_completed_targets, N)
-        ax3.plot(np.arange(len(smoothed)) + N, smoothed, 'b-',
-                linewidth=2, label=f'MA({N})')
-    ax3.axhline(y=len(user_num), color='r', linestyle='--', 
-               label='Total Targets')
-    ax3.set_xlabel('Episode')
-    ax3.set_ylabel('Completed Targets')
-    ax3.set_title('Completed Targets per Episode')
-    ax3.legend()
-    ax3.grid(alpha=0.3)
-    
-    # 4. 探索噪声
-    ax4 = plt.subplot(2, 3, 4)
-    ax4.plot(ep_exploration_noise, 'orange', linewidth=2)
-    ax4.set_xlabel('Episode')
-    ax4.set_ylabel('Exploration Noise')
-    ax4.set_title('Exploration Noise Decay')
-    ax4.grid(alpha=0.3)
-    
-    # 5. 碰撞率
-    ax5 = plt.subplot(2, 3, 5)
-    collision_rate = [np.mean(ep_collision[max(0,i-100):i+1]) 
-                     for i in range(len(ep_collision))]
-    ax5.plot(collision_rate, 'r-', linewidth=2)
-    ax5.set_xlabel('Episode')
-    ax5.set_ylabel('Collision Rate')
-    ax5.set_title('Collision Rate (100-episode MA)')
-    ax5.grid(alpha=0.3)
-    
-    # 6. 奖励分布
-    ax6 = plt.subplot(2, 3, 6)
-    ax6.hist(ep_rewards, bins=50, alpha=0.7, edgecolor='black')
-    ax6.axvline(x=best_reward, color='r', linestyle='--', 
-               linewidth=2, label=f'Best: {best_reward:.2f}')
-    ax6.set_xlabel('Reward')
-    ax6.set_ylabel('Frequency')
-    ax6.set_title('Reward Distribution')
-    ax6.legend()
-    ax6.grid(alpha=0.3)
-    
-    plt.tight_layout()
-    plt.savefig(f'{train_path}training_results.png', dpi=300, bbox_inches='tight')
+    # ==================== 绘制训练奖励曲线 (仅 reward) ====================
+    plt.figure(figsize=(12, 6))
+    episodes = np.arange(1, len(ep_rewards) + 1)
+    plt.plot(episodes, ep_rewards, label='Episode Reward', alpha=0.6)
+
+    # 可选：绘制移动平均以显示趋势
+    if len(ep_rewards) > 1:
+        N = min(100, max(1, len(ep_rewards) // 4))
+        if N > 0 and len(ep_rewards) >= N:
+            smoothed = get_moving_average(ep_rewards, N)
+            plt.plot(np.arange(N, N + len(smoothed)), smoothed, 'r-', linewidth=2, label=f'MA({N})')
+
+    plt.xlabel('Episode')
+    plt.ylabel('Reward')
+    plt.title('Training Reward Curve')
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.savefig(f'{train_path}training_reward_curve.png', dpi=300, bbox_inches='tight')
     plt.close()
-    
-   
 
 
 if __name__ == "__main__":
