@@ -461,7 +461,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='测试MA-TD3多无人机模型')
     parser.add_argument('--model_path', type=str, default='Model/MATD3_uav2/',
                        help='模型保存路径')
-    parser.add_argument('--model_episode', type=str, default='700',
+    parser.add_argument('--model_episode', type=str, default='final',
                        help='模型版本 (final/best/数字)')
     parser.add_argument('--uav_num', type=int, default=2,
                        help='无人机数量')
