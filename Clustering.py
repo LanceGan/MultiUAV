@@ -195,8 +195,9 @@ def kmeans(points: np.ndarray,
 
 
 if __name__ == '__main__':
-	pts = np.loadtxt('results/datas/Users_20.txt')
-	UAV_num = 4
+	Users_num = 20
+	pts = np.loadtxt('results/datas/Users_%d.txt' % Users_num)
+	UAV_num = 2
 	mode = ('origin','comm')[1]
 	random_seed = int(np.random.uniform(0,100))
 	if mode == 'origin':
@@ -204,10 +205,10 @@ if __name__ == '__main__':
 		print("Labels:", labels)
 		print("Centers:", centers)
 		print("Inertia:", inertia)
-		np.savetxt('results/datas/Users_20_Clustered'+'UAV_'+str(UAV_num)+'.txt', labels, fmt='%d')
+		np.savetxt('results/datas/cluster/Users_%d_Clustered'% Users_num+'UAV_'+str(UAV_num)+'.txt', labels, fmt='%d')
 	elif mode == 'comm':
-		labels, centers, inertia = kmeans(pts, UAV_num, max_iters=1000,comm_weight=0.5, uav_height=0.1, random_state=random_seed, point_scale=0.1)
+		labels, centers, inertia = kmeans(pts, UAV_num, max_iters=1000,comm_weight=0.3, uav_height=0.1, random_state=random_seed, point_scale=0.1)
 		print("Labels:", labels)
 		print("Centers:", centers)
 		print("Inertia:", inertia)
-		np.savetxt('results/datas/Users_20_Clustered_comm'+'UAV_'+str(UAV_num)+'.txt', labels, fmt='%d')
+		np.savetxt('results/datas/cluster/Users_%d_Clustered_comm'% Users_num+'UAV_'+str(UAV_num)+'.txt', labels, fmt='%d')

@@ -342,7 +342,7 @@ if __name__ == '__main__':
     cbar.set_label('SINR', labelpad=20, rotation=270, fontsize=14)
     plt.xlabel('x (meter)', fontsize=14)
     plt.ylabel('y (meter)', fontsize=14)
-    plt.savefig('results/figs/OutageMapActualSINR.png', dpi=300, bbox_inches='tight')
+    plt.savefig('results/figs/OutageMapActualSINR_%dkm.png'%D, dpi=300, bbox_inches='tight')
     plt.show()
     
     
@@ -353,8 +353,8 @@ if __name__ == '__main__':
     cbar.set_label('coverage probability', labelpad=20, rotation=270, fontsize=14)
     plt.xlabel('x (meter)', fontsize=14)
     plt.ylabel('y (meter)', fontsize=14)
-    plt.savefig('results/figs/OutageMapActual.png', dpi=300, bbox_inches='tight')
+    plt.savefig('results/figs/OutageMapActual_%dkm.png'%D, dpi=300, bbox_inches='tight')
     plt.show()
-    
-    
-    np.savez('results/datas/Radio_datas', OutageMapActual, OutageMapActualSINR ,X_vec, Y_vec)
+
+
+    np.savez('results/datas/Radio_datas_G2A_%dkm'%D, OutageMapActual, OutageMapActualSINR ,X_vec, Y_vec)
