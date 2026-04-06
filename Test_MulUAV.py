@@ -107,7 +107,7 @@ def test_matd3_model(
     mkdir('./results/figs/trajectory/')
     
     # 基础环境参数 (与训练时保持一致)
-    T = 2000
+    T = 2500
     uav_h = 1.0
     V_max = 0.50
     delta_t = 0.5
@@ -122,7 +122,8 @@ def test_matd3_model(
         user_num = 20
         Length = 40
         Width = 40
-        sequence_path = './results/datas/sequence/Users_20_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
+        # sequence_path = './results/datas/sequence/Users_20_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
+        sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
         ini_loc = [14.76, 14.83]
         end_loc = [27.62, 23.47]
         BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
@@ -131,7 +132,8 @@ def test_matd3_model(
         user_num = 30
         Length = 50
         Width = 50
-        sequence_path = './results/datas/sequence/Users_30_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
+        # sequence_path = './results/datas/sequence/Users_30_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
+        sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
         ini_loc = [32.88, 22.67]
         end_loc = [21.62, 48.47]
         BS_loc=np.array([[1.879, 1.034, 0.025],[3.373, 1.031, 0.025],[0.929, 2.545, 0.025],
@@ -140,7 +142,8 @@ def test_matd3_model(
         user_num = 40
         Length = 60
         Width = 60
-        sequence_path = './results/datas/sequence/Users_40_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num    
+        # sequence_path = './results/datas/sequence/Users_40_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
+        sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
         ini_loc = [34.12, 28.79]
         end_loc = [38.46, 45.23]
         BS_loc=np.array([[2.255, 1.241, 0.025],[4.047, 1.238, 0.025],[1.115, 3.054, 0.025],
@@ -260,7 +263,8 @@ def test_matd3_model(
             # 执行动作
             next_obs_list, rewards, done, info, uav_reach = world.step(actions)
             
-            episode_reward += np.mean(rewards)
+            # 使用所有智能体的奖励总和（与训练时的统计保持一致）
+            episode_reward += np.sum(rewards)
             obs_list = next_obs_list
             
             # 记录轨迹

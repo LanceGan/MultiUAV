@@ -9,15 +9,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # ====================== Actor Network (分散式) ======================
+# ====================== Actor Network (分散式) ======================
 class MActor(nn.Module):
     """多智能体Actor网络 - 每个智能体使用局部观测独立决策"""
-    def __init__(self, local_state_dim, action_dim, net_width, maxaction):
+    def __init__(self, local_state_dim, action_dim, net_width, max_action, min_action):
         super(MActor, self).__init__()
         self.l1 = nn.Linear(local_state_dim, net_width)
         self.l2 = nn.Linear(net_width, net_width)
         self.l3 = nn.Linear(net_width, net_width)
         self.l4 = nn.Linear(net_width, action_dim)
-        self.maxaction = maxaction
+        
+        # 🔥 新增：计算动作空间的缩放比例和偏置
+        self.action_scale = (max_action - min_action) / 2.0
+        self.action_bias = (max_action + min_action) / 2.0
 
     def forward(self, local_state):
         """
@@ -27,9 +31,11 @@ class MActor(nn.Module):
         a = torch.tanh(self.l1(local_state))
         a = torch.tanh(self.l2(a))
         a = torch.tanh(self.l3(a))
-        a = torch.tanh(self.l4(a)) * self.maxaction
+        a = torch.tanh(self.l4(a))
+        
+        # 🔥 修复：将 tanh 的 [-1, 1] 准确映射到 [min_action, max_action]
+        a = a * self.action_scale + self.action_bias
         return a
-
 
 # ====================== Critic Network (集中式) ======================
 class MAQ_Critic(nn.Module):
@@ -111,7 +117,7 @@ class MATD3Agent(object):
         self.min_action = min_action
 
         # Actor网络 (分散式 - 仅使用局部观测)
-        self.actor = MActor(local_state_dim, action_dim, net_width, max_action).to(device)
+        self.actor = MActor(local_state_dim, action_dim, net_width, max_action, min_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=a_lr)
 
@@ -186,18 +192,25 @@ class MATD3(object):
         self.global_state_dim = n_agents * local_state_dim
         self.total_action_dim = n_agents * action_dim
         
-        # 转换max_action
+        # 转换max_action与min_action
         if isinstance(max_action, np.ndarray):
             max_action = torch.tensor(max_action, dtype=torch.float32).to(device)
+            min_action = torch.tensor(min_action, dtype=torch.float32).to(device) # 🔥 新增
         elif not isinstance(max_action, torch.Tensor):
             max_action = torch.tensor([max_action], dtype=torch.float32).to(device)
+            min_action = torch.tensor([min_action], dtype=torch.float32).to(device) # 🔥 新增
         self.max_action = max_action
+        self.min_action = min_action # 🔥 新增
         
         # TD3参数
         self.tau = 0.005
-        self.policy_noise = 0.2 * max_action
-        self.noise_clip = 0.5 * max_action
-        self.delay_counter = -1
+        
+        # 🔥 修复：TD3平滑噪声应基于动作跨度 (max - min) 而不是纯 max
+        action_range = self.max_action - self.min_action
+        self.policy_noise = 0.2 * action_range
+        self.noise_clip = 0.5 * action_range
+        
+        self.delay_counter = 0 # 🔥 顺手把这里的 -1 改为 0，让下面的更新逻辑更符合常理
         self.delay_freq = 2  # 延迟策略更新频率
         
         # TensorBoard
@@ -267,11 +280,25 @@ class MATD3(object):
         # 从replay buffer采样
         # 期望格式: (global_state, all_actions, rewards, global_next_state, dones)
         batch = replay_buffer.sample(self.Q_batchsize)
-        
-        if len(batch) == 5:
-            global_s, all_a, r, global_s_prime, dead_mask = batch
+
+        # 支持多种 replay buffer 返回格式（至少需要5个元素）
+        if len(batch) >= 5:
+            global_s, all_a, r, global_s_prime, dead_mask = batch[:5]
         else:
-            raise ValueError("Replay buffer返回格式错误，期望5个元素")
+            raise ValueError("Replay buffer返回格式错误，期望至少5个元素")
+
+        # 如果回放返回的是每智能体的奖励（batch, n_agents），将其聚合为团队标量
+        # 默认使用平均作为团队奖励；如果需要可以改为求和
+        if isinstance(r, torch.Tensor) and r.dim() > 1 and r.size(1) > 1:
+            r_team = r.mean(dim=1, keepdim=True)
+        else:
+            r_team = r
+
+        # 同理处理 per-agent done 标志：按元素取 max（任一 agent done 则认为该条经验为 done）
+        if isinstance(dead_mask, torch.Tensor) and dead_mask.dim() > 1 and dead_mask.size(1) > 1:
+            dead_mask_team = dead_mask.max(dim=1, keepdim=True)[0]
+        else:
+            dead_mask_team = dead_mask
         
         # ==================== 更新 Critic ====================
         with torch.no_grad():
@@ -291,8 +318,11 @@ class MATD3(object):
                     torch.randn_like(next_action) * self.policy_noise,
                     -self.noise_clip, self.noise_clip
                 )
-                next_action = torch.clamp(next_action + noise, 
-                                        -self.max_action, self.max_action)
+                
+                # 🔥 修复：使用 min_action 和 max_action 进行精确边界截断
+                next_action = next_action + noise
+                next_action = torch.max(torch.min(next_action, self.max_action), self.min_action)
+                
                 next_actions.append(next_action)
             
             # 拼接所有动作
@@ -302,11 +332,11 @@ class MATD3(object):
             target_Q1, target_Q2 = self.q_critic_target(global_s_prime, all_next_actions)
             target_Q = torch.min(target_Q1, target_Q2)
             
-            # 3. 计算TD target
+            # 3. 计算TD target（使用聚合后的团队奖励/done）
             if self.env_with_Dead:
-                target_Q = r + (1 - dead_mask) * self.gamma * target_Q
+                target_Q = r_team + (1 - dead_mask_team) * self.gamma * target_Q
             else:
-                target_Q = r + self.gamma * target_Q
+                target_Q = r_team + self.gamma * target_Q
         
         # 4. 当前Q值
         current_Q1, current_Q2 = self.q_critic(global_s, all_a)
@@ -326,7 +356,8 @@ class MATD3(object):
         self.q_iteration += 1
         
         # ==================== 延迟更新 Actor ====================
-        if self.delay_counter == self.delay_freq:
+        # 🔥 修复：使用取模法，确保严格的更新频率
+        if self.delay_counter % self.delay_freq == 0:
             total_actor_loss = 0.0
             
             for i, agent in enumerate(self.agents):
@@ -371,8 +402,7 @@ class MATD3(object):
             
             # 5. 软更新所有目标网络
             self._soft_update_targets()
-            
-            self.delay_counter = -1
+
         
         return {
             'critic_loss': q_loss.item(),
