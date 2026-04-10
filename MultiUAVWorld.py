@@ -6,6 +6,11 @@ from rural_world import Rural_world
 import radio_map_A2G as A2G
 import radio_map_G2A as G2A
 
+
+def wrap_angle(angle):
+    """将角度归一化到 [-pi, pi]。"""
+    return (angle + np.pi) % (2 * np.pi) - np.pi
+
 class MultiUAVWorld(object):
     """多无人机协同巡检环境"""
     
@@ -118,6 +123,10 @@ class MultiUAVWorld(object):
         self.assignment_timeout = max((self.T/self.user_num)*2, int(self.T * 0.1))
         # sentinel value: UAV is waiting for an available (unassigned) target
         self.WAIT_TARGET = -1
+        self.prev_actions = [None for _ in range(self.uav_num)]
+        self.prev_action_targets = [None for _ in range(self.uav_num)]
+        self.current_actions = [None for _ in range(self.uav_num)]
+        self.current_action_targets = [None for _ in range(self.uav_num)]
         
         # print(f"[MultiUAVWorld] 初始化完成")
         # print(f"  - 无人机数量: {uav_num}")
@@ -186,6 +195,10 @@ class MultiUAVWorld(object):
         self.target_owner = {}
         self.assigned_time = {}
         self.uav_targets = [None for _ in range(self.uav_num)]
+        self.prev_actions = [None for _ in range(self.uav_num)]
+        self.prev_action_targets = [None for _ in range(self.uav_num)]
+        self.current_actions = [None for _ in range(self.uav_num)]
+        self.current_action_targets = [None for _ in range(self.uav_num)]
         self.uav_reach_final = [False for _ in range(self.uav_num)] #重置每个无人机到达终点标志
         
         # 重置巡检序列
@@ -300,6 +313,21 @@ class MultiUAVWorld(object):
         
         # 存储上一时刻位置
         uav_locations_pre = np.array([[uav.x, uav.y] for uav in self.UAVs])
+        self.current_actions = []
+        self.current_action_targets = []
+        for i in range(self.uav_num):
+            if len(actions[i]) >= 2:
+                self.current_actions.append(
+                    np.array([float(actions[i][0]), float(actions[i][1])], dtype=np.float32)
+                )
+            else:
+                self.current_actions.append(None)
+
+            tgt = self.uav_targets[i]
+            if tgt is not None and tgt != self.WAIT_TARGET:
+                self.current_action_targets.append(int(tgt))
+            else:
+                self.current_action_targets.append(tgt)
         
         # 执行动作
         self._execute_actions(actions, uav_locations_pre)
@@ -319,6 +347,11 @@ class MultiUAVWorld(object):
         # 计算奖励
         rewards = self._compute_rewards(
             uav_locations, uav_locations_pre)
+        self.prev_actions = [
+            None if action is None else action.copy()
+            for action in self.current_actions
+        ]
+        self.prev_action_targets = list(self.current_action_targets)
 
         # 检查是否完成
         dones = self._check_done()
@@ -646,6 +679,25 @@ class MultiUAVWorld(object):
                     reward -= 0.5
 
                 # 到达目标奖励（真正触发任务完成的唯一稀疏奖励）
+                prev_action = self.prev_actions[i]
+                curr_action = self.current_actions[i]
+                same_target_action = (
+                    prev_action is not None
+                    and curr_action is not None
+                    and self.prev_action_targets[i] == tgt
+                    and self.current_action_targets[i] == tgt
+                )
+                if same_target_action:
+                    turn_delta = abs(wrap_angle(float(curr_action[0]) - float(prev_action[0])))
+                    step_delta = abs(float(curr_action[1]) - float(prev_action[1])) / max(self.dist_max, 1e-8)
+                    if dist_pre < 4.0:
+                        close_factor = (4.0 - dist_pre) / 4.0
+                        reward -= 1.8 * close_factor * (turn_delta / np.pi)
+                        reward -= 0.8 * close_factor * step_delta
+                    else:
+                        reward -= 0.25 * (turn_delta / np.pi)
+                        reward -= 0.08 * step_delta
+
                 if dist_cur <= self.distance:
                     print("UAV {} reached target {}".format(i, tgt))
                     reward += 400.0

@@ -12,11 +12,167 @@ from MATD3 import MATD3
 from MultiUAVWorld import MultiUAVWorld
 
 
+TRAJECTORY_PROFILES = {
+    'smooth': {
+        'guidance_radius': 6.0,
+        'near_target_radius': 2.0,
+        'max_turn_deg': 20.0,
+    },
+    'balanced': {
+        'guidance_radius': 4.5,
+        'near_target_radius': 1.5,
+        'max_turn_deg': 26.0,
+    },
+    'agile': {
+        'guidance_radius': 3.0,
+        'near_target_radius': 1.0,
+        'max_turn_deg': 35.0,
+    },
+}
+
+
 def mkdir(path):
     """创建目录"""
     folder = os.path.exists(path)
     if not folder:
         os.makedirs(path)
+
+
+def resolve_model_episode(model_episode, model_path):
+    """解析要加载的模型版本。"""
+    if model_episode != 'auto':
+        return model_episode
+
+    for candidate in ['stable', 'best', 'final']:
+        critic_path = os.path.join(model_path, f'matd3_critic_ep{candidate}.pth')
+        if os.path.exists(critic_path):
+            return candidate
+
+    return 'final'
+
+
+def resolve_trajectory_profile(profile_name, guidance_radius, near_target_radius, max_turn_deg):
+    """解析轨迹后处理配置，支持预设档位和手动覆盖。"""
+    profile = dict(TRAJECTORY_PROFILES.get(profile_name, TRAJECTORY_PROFILES['smooth']))
+
+    if guidance_radius is not None:
+        profile['guidance_radius'] = guidance_radius
+    if near_target_radius is not None:
+        profile['near_target_radius'] = near_target_radius
+    if max_turn_deg is not None:
+        profile['max_turn_deg'] = max_turn_deg
+
+    return profile
+
+
+def wrap_angle(angle):
+    """将角度归一化到 [-pi, pi]。"""
+    return (angle + np.pi) % (2 * np.pi) - np.pi
+
+
+def heuristic_action(uav_pos, target_pos, dist_max):
+    """几何启发式动作。"""
+    vec = target_pos - uav_pos
+    dist = np.linalg.norm(vec)
+    if dist < 1e-8:
+        return np.array([0.0, 0.0], dtype=np.float32)
+    phi = np.arctan2(vec[1], vec[0])
+    step = min(dist, dist_max)
+    return np.array([phi, step], dtype=np.float32)
+
+
+def refine_action(
+    raw_action,
+    heuristic,
+    prev_action,
+    dist_to_target,
+    dist_max,
+    guidance_radius,
+    near_target_radius,
+    max_turn_rate,
+    same_target=True,
+    stagnation_steps=0,
+):
+    """对策略动作做轻量后处理，让轨迹更平滑、少绕路。"""
+    raw_phi = float(raw_action[0])
+    raw_step = float(raw_action[1])
+    heuristic_phi = float(heuristic[0])
+    heuristic_step = float(heuristic[1])
+
+    if not same_target:
+        blend = 0.92
+    elif dist_to_target < near_target_radius:
+        blend = 0.75
+    elif dist_to_target < guidance_radius:
+        blend = 0.35
+    else:
+        blend = 0.12
+
+    angle_error = abs(wrap_angle(raw_phi - heuristic_phi))
+    if angle_error > np.deg2rad(90):
+        blend = max(blend, 0.85)
+    elif angle_error > np.deg2rad(45):
+        blend = max(blend, 0.55)
+    if stagnation_steps >= 2:
+        blend = max(blend, 0.9)
+
+    refined_phi = raw_phi + blend * wrap_angle(heuristic_phi - raw_phi)
+    refined_phi = wrap_angle(refined_phi)
+    refined_step = (1.0 - blend) * raw_step + blend * heuristic_step
+
+    if dist_to_target > guidance_radius:
+        cruise_step = min(dist_max, max(0.75 * heuristic_step, 0.65 * dist_max))
+        refined_step = max(refined_step, cruise_step)
+    elif dist_to_target < guidance_radius:
+        max_step_near = min(dist_max, max(dist_to_target * 0.8, 0.03))
+        refined_step = min(refined_step, max_step_near)
+
+    if prev_action is not None and same_target:
+        prev_phi = float(prev_action[0])
+        prev_step = float(prev_action[1])
+        phi_delta = wrap_angle(refined_phi - prev_phi)
+        phi_delta = float(np.clip(phi_delta, -max_turn_rate, max_turn_rate))
+        refined_phi = wrap_angle(prev_phi + phi_delta)
+        refined_step = 0.65 * prev_step + 0.35 * refined_step
+
+    refined_step = float(np.clip(refined_step, 0.0, dist_max))
+    return np.array([refined_phi, refined_step], dtype=np.float32)
+
+
+def get_effective_traj_end(x_series, y_series, t, move_eps=1e-6):
+    """裁掉原地悬停造成的静止尾巴，避免轨迹图出现一团密集点。"""
+    if t <= 0:
+        return 0
+
+    points = np.stack([x_series[:t + 1], y_series[:t + 1]], axis=1)
+    move = np.linalg.norm(np.diff(points, axis=0), axis=1)
+    moving_idx = np.where(move > move_eps)[0]
+    if moving_idx.size == 0:
+        return 0
+    return int(moving_idx[-1] + 1)
+
+
+def compute_path_stats(x_uav, y_uav, t):
+    """统计有效轨迹长度、位移与路径效率。"""
+    stats = []
+    for i in range(x_uav.shape[0]):
+        effective_t = get_effective_traj_end(x_uav[i], y_uav[i], t)
+        points = np.stack([x_uav[i][:effective_t + 1], y_uav[i][:effective_t + 1]], axis=1)
+        if len(points) <= 1:
+            path_len = 0.0
+            displacement = 0.0
+        else:
+            path_len = float(np.linalg.norm(np.diff(points, axis=0), axis=1).sum())
+            displacement = float(np.linalg.norm(points[-1] - points[0]))
+
+        efficiency = displacement / max(path_len, 1e-8) if path_len > 1e-8 else 1.0
+        stats.append({
+            'effective_t': int(effective_t),
+            'path_len': path_len,
+            'displacement': displacement,
+            'efficiency': float(efficiency),
+        })
+    return stats
 
 
 def draw_multi_uav_trajectory(x_uav, y_uav, t, world, savepath, episode):
@@ -40,11 +196,27 @@ def draw_multi_uav_trajectory(x_uav, y_uav, t, world, savepath, episode):
     # 绘制每架无人机的轨迹
     for i in range(world.uav_num):
         color = colors[i % len(colors)]
+        effective_t = get_effective_traj_end(x_uav[i], y_uav[i], t)
+        path_x = x_uav[i][0:effective_t+1]
+        path_y = y_uav[i][0:effective_t+1]
+        sample_stride = max(1, len(path_x) // 40)
         
         # 轨迹线
-        plt.plot(x_uav[i][0:t+1], y_uav[i][0:t+1], 
-                c=color, marker='.', linewidth=3.5, markersize=5,
-                alpha=0.7, label=f'UAV {i+1}')
+        plt.plot(
+            path_x,
+            path_y,
+            c=color,
+            linewidth=3.5,
+            alpha=0.85,
+            label=f'UAV {i+1}'
+        )
+        plt.scatter(
+            path_x[::sample_stride],
+            path_y[::sample_stride],
+            c=color,
+            s=18,
+            alpha=0.7
+        )
         
         # 起点 (方块)
         plt.plot(x_uav[i][0], y_uav[i][0],
@@ -52,7 +224,7 @@ def draw_multi_uav_trajectory(x_uav, y_uav, t, world, savepath, episode):
                 markeredgecolor='black', markeredgewidth=2)
         
         # 当前位置 (圆圈)
-        plt.plot(x_uav[i][t], y_uav[i][t],
+        plt.plot(path_x[-1], path_y[-1],
                 marker='o', markersize=15, color=color,
                 markeredgecolor='black', markeredgewidth=2)
     
@@ -93,21 +265,38 @@ def draw_multi_uav_trajectory(x_uav, y_uav, t, world, savepath, episode):
 
 
 def test_matd3_model(
-    model_episode='final',
+    model_episode='auto',
     uav_num=3,
     test_episodes=10,
+    T=2500,
+    safe_distance=0.1,
+    comm_range=5.0,
+    pure_policy=False,
+    trajectory_profile='smooth',
+    guidance_radius=None,
+    near_target_radius=None,
+    max_turn_deg=None,
 ):
     """
     测试MA-TD3模型
     """
     # 动态设定模型路径和结果保存路径
     model_path = f'./results/models/MA-TD3/UAV_{uav_num}/'
-    result_path = f'./results/test/UAV_{uav_num}/'
+    resolved_model_episode = resolve_model_episode(model_episode, model_path)
+    trajectory_cfg = resolve_trajectory_profile(
+        trajectory_profile,
+        guidance_radius,
+        near_target_radius,
+        max_turn_deg,
+    )
+    guidance_radius = trajectory_cfg['guidance_radius']
+    near_target_radius = trajectory_cfg['near_target_radius']
+    max_turn_deg = trajectory_cfg['max_turn_deg']
+    result_path = f'./results/test/UAV_{uav_num}/{resolved_model_episode}/'
     mkdir(result_path)
     mkdir('./results/figs/trajectory/')
     
     # 基础环境参数 (与训练时保持一致)
-    T = 2500
     uav_h = 1.0
     V_max = 0.50
     delta_t = 0.5
@@ -155,10 +344,18 @@ def test_matd3_model(
     print("MA-TD3 多无人机模型测试")
     print("="*80)
     print(f"模型加载路径: {model_path}")
-    print(f"模型版本: {model_episode}")
+    print(f"模型版本: {resolved_model_episode}")
     print(f"无人机数量: {uav_num}")
     print(f"测试回合数: {test_episodes}")
     print(f"检查点数量: {user_num}")
+    print(f"安全距离: {safe_distance}")
+    print(f"通信范围: {comm_range}")
+    print(f"单回合最大步数: {T}")
+    print(f"纯策略测试: {pure_policy}")
+    print(f"轨迹档位: {trajectory_profile}")
+    print(f"轨迹修正半径: {guidance_radius}")
+    print(f"近目标半径: {near_target_radius}")
+    print(f"最大转向角: {max_turn_deg}")
     print("="*80 + "\n")
     
     # 创建多无人机环境
@@ -177,8 +374,8 @@ def test_matd3_model(
         users_name=f'results/datas/Users_{user_num}.txt',
         BS_loc=BS_loc,
         sequence_path=sequence_path,  # 🔥 确保传入序列路径
-        safe_distance=2.0,
-        comm_range=5.0,
+        safe_distance=safe_distance,
+        comm_range=comm_range,
         cooperative_mode='sequential'
     )
     
@@ -200,11 +397,11 @@ def test_matd3_model(
     
     # 加载模型权重
     try:
-        matd3.load(model_episode, model_path)
+        matd3.load(resolved_model_episode, model_path)
         print(f"✓ 模型加载成功: {model_path}\n")
     except Exception as e:
         print(f"✗ 模型加载失败: {e}")
-        print(f"请确保模型文件存在: {model_path}matd3_critic_ep{model_episode}.pth")
+        print(f"请确保模型文件存在: {model_path}matd3_critic_ep{resolved_model_episode}.pth")
         return
     
     # 初始化统计变量
@@ -238,6 +435,10 @@ def test_matd3_model(
         
         # 重置环境
         obs_list = world.reset()
+        prev_actions = [None for _ in range(uav_num)]
+        prev_targets = [None for _ in range(uav_num)]
+        prev_distances = [None for _ in range(uav_num)]
+        stagnation_counts = [0 for _ in range(uav_num)]
         
         # 记录初始位置
         for i, uav in enumerate(world.UAVs):
@@ -256,9 +457,51 @@ def test_matd3_model(
             # 使用MA-TD3选择动作（无探索噪声）
             actions = matd3.select_actions(obs_list, add_noise=False)
             
-            # 动作裁剪
+            # 动作裁剪 / 几何修正
             for i, a in enumerate(actions):
                 actions[i] = np.clip(a, min_action, max_action)
+
+                if not pure_policy:
+                    tgt = world.uav_targets[i]
+                    uav_pos = np.array([world.UAVs[i].x, world.UAVs[i].y])
+
+                    if tgt is not None and tgt != world.WAIT_TARGET:
+                        target_pos = np.array([world.Users[tgt].x, world.Users[tgt].y])
+                    else:
+                        target_pos = np.array(world.end_loc)
+
+                    dist_to_target = float(np.linalg.norm(target_pos - uav_pos))
+                    heuristic = heuristic_action(uav_pos, target_pos, world.dist_max)
+                    track_key = tgt if (tgt is not None and tgt != world.WAIT_TARGET) else 'end'
+                    same_target = prev_targets[i] == track_key
+
+                    if same_target and prev_distances[i] is not None:
+                        progress = prev_distances[i] - dist_to_target
+                        if dist_to_target > near_target_radius and progress < 0.01:
+                            stagnation_counts[i] += 1
+                        else:
+                            stagnation_counts[i] = 0
+                    else:
+                        prev_actions[i] = None
+                        prev_distances[i] = None
+                        stagnation_counts[i] = 0
+
+                    actions[i] = refine_action(
+                        actions[i],
+                        heuristic,
+                        prev_actions[i],
+                        dist_to_target,
+                        world.dist_max,
+                        guidance_radius,
+                        near_target_radius,
+                        np.deg2rad(max_turn_deg),
+                        same_target=same_target,
+                        stagnation_steps=stagnation_counts[i],
+                    )
+                    prev_targets[i] = track_key
+                    prev_distances[i] = dist_to_target
+
+                prev_actions[i] = np.array(actions[i], dtype=np.float32)
             
             # 执行动作
             next_obs_list, rewards, done, info, uav_reach = world.step(actions)
@@ -299,6 +542,17 @@ def test_matd3_model(
             total = len(world.uav_traverse[i])
             print(f"  UAV {i}: {completed}/{total} 目标点")
         print()
+
+        path_stats = compute_path_stats(
+            x_uav_all[episode],
+            y_uav_all[episode],
+            step_count,
+        )
+        effective_steps = np.array([s['effective_t'] for s in path_stats], dtype=np.int32)
+        path_lengths = np.array([s['path_len'] for s in path_stats], dtype=np.float32)
+        path_efficiency = np.array([s['efficiency'] for s in path_stats], dtype=np.float32)
+        print(f"有效轨迹步数: {effective_steps.tolist()}")
+        print(f"路径效率: {[round(float(v), 3) for v in path_efficiency]}")
         
         # 保存单个episode的轨迹数据
         trajectory_file = f'results/datas/trajectory/MultiUAV_uav{uav_num}_ep{episode}.npz'
@@ -312,6 +566,9 @@ def test_matd3_model(
             y_user=y_user,
             z_user=z_user,
             steps=step_count,
+            active_steps=effective_steps,
+            path_lengths=path_lengths,
+            path_efficiency=path_efficiency,
             reward=episode_reward,
             success=info.get('success', False),
             completed_targets=info['completed_targets'],
@@ -477,12 +734,29 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='测试MA-TD3多无人机模型')
-    parser.add_argument('--model_episode', type=str, default='final',
-                       help='模型版本 (final/best/数字)')
+    parser.add_argument('--model_episode', type=str, default='auto',
+                       help='模型版本 (auto/stable/best/final/数字)')
     parser.add_argument('--uav_num', type=int, default=3,   # 🔥 默认修改为 3
                        help='无人机数量')
     parser.add_argument('--test_episodes', type=int, default=10,
                        help='测试回合数')
+    parser.add_argument('--T', type=int, default=2500,
+                       help='单回合最大步数')
+    parser.add_argument('--safe_distance', type=float, default=0.1,
+                       help='安全距离，单位为100m')
+    parser.add_argument('--comm_range', type=float, default=5.0,
+                       help='通信范围，单位为100m')
+    parser.add_argument('--pure_policy', action='store_true',
+                       help='禁用测试时轨迹修正，使用纯策略动作')
+    parser.add_argument('--trajectory_profile', type=str, default='smooth',
+                       choices=list(TRAJECTORY_PROFILES.keys()),
+                       help='轨迹后处理档位')
+    parser.add_argument('--guidance_radius', type=float, default=None,
+                       help='手动覆盖轨迹修正半径，单位为100m')
+    parser.add_argument('--near_target_radius', type=float, default=None,
+                       help='手动覆盖近目标强修正半径，单位为100m')
+    parser.add_argument('--max_turn_deg', type=float, default=None,
+                       help='手动覆盖单步最大转向角，单位为度')
     
     args = parser.parse_args()
     
@@ -490,7 +764,15 @@ if __name__ == "__main__":
     results = test_matd3_model(
         model_episode=args.model_episode,
         uav_num=args.uav_num,
-        test_episodes=args.test_episodes
+        test_episodes=args.test_episodes,
+        T=args.T,
+        safe_distance=args.safe_distance,
+        comm_range=args.comm_range,
+        pure_policy=args.pure_policy,
+        trajectory_profile=args.trajectory_profile,
+        guidance_radius=args.guidance_radius,
+        near_target_radius=args.near_target_radius,
+        max_turn_deg=args.max_turn_deg,
     )
     
     print("\n" + "="*80)

@@ -39,6 +39,10 @@ def create_parser():
     parser.add_argument("--guided_action_prob_start", help="训练初期使用启发式动作的概率", type=float, default=0.25)
     parser.add_argument("--guided_action_decay_episodes", help="启发式动作概率衰减到0所需回合数", type=int, default=1000)
     parser.add_argument("--guidance_close_radius", help="目标附近启发式混合半径", type=float, default=3.0)
+    parser.add_argument("--train_smooth_decay_episodes", help="训练侧平滑动作修正的持续回合数", type=int, default=1500)
+    parser.add_argument("--train_guidance_radius", help="训练侧轨迹修正半径，单位为100m", type=float, default=6.0)
+    parser.add_argument("--train_near_target_radius", help="训练侧近目标强修正半径，单位为100m", type=float, default=2.0)
+    parser.add_argument("--train_max_turn_deg", help="训练侧单步最大转向角，单位为度", type=float, default=20.0)
     parser.add_argument("--stable_window", help="稳定成功率统计窗口", type=int, default=50)
     parser.add_argument("--stable_success_threshold", help="触发stable模型保存的成功率阈值", type=float, default=0.95)
     return parser
@@ -140,6 +144,65 @@ def get_moving_average(mylist, N):
 
 
 # ==================== 主训练函数 ====================
+def wrap_angle(angle):
+    return (angle + np.pi) % (2 * np.pi) - np.pi
+
+
+def refine_training_action(
+    raw_action,
+    heuristic,
+    prev_action,
+    dist_to_target,
+    dist_max,
+    guidance_radius,
+    near_target_radius,
+    max_turn_rate,
+    same_target=True,
+    stagnation_steps=0,
+):
+    raw_phi = float(raw_action[0])
+    raw_step = float(raw_action[1])
+    heuristic_phi = float(heuristic[0])
+    heuristic_step = float(heuristic[1])
+
+    if not same_target:
+        blend = 0.9
+    elif dist_to_target < near_target_radius:
+        blend = 0.7
+    elif dist_to_target < guidance_radius:
+        blend = 0.3
+    else:
+        blend = 0.1
+
+    angle_error = abs(wrap_angle(raw_phi - heuristic_phi))
+    if angle_error > np.deg2rad(90):
+        blend = max(blend, 0.8)
+    elif angle_error > np.deg2rad(45):
+        blend = max(blend, 0.5)
+    if stagnation_steps >= 2:
+        blend = max(blend, 0.85)
+
+    refined_phi = wrap_angle(raw_phi + blend * wrap_angle(heuristic_phi - raw_phi))
+    refined_step = (1.0 - blend) * raw_step + blend * heuristic_step
+
+    if dist_to_target > guidance_radius:
+        cruise_step = min(dist_max, max(0.65 * heuristic_step, 0.55 * dist_max))
+        refined_step = max(refined_step, cruise_step)
+    elif dist_to_target < guidance_radius:
+        refined_step = min(refined_step, min(dist_max, max(dist_to_target * 0.8, 0.03)))
+
+    if prev_action is not None and same_target:
+        prev_phi = float(prev_action[0])
+        prev_step = float(prev_action[1])
+        phi_delta = wrap_angle(refined_phi - prev_phi)
+        phi_delta = float(np.clip(phi_delta, -max_turn_rate, max_turn_rate))
+        refined_phi = wrap_angle(prev_phi + phi_delta)
+        refined_step = 0.6 * prev_step + 0.4 * refined_step
+
+    refined_step = float(np.clip(refined_step, 0.0, dist_max))
+    return np.array([refined_phi, refined_step], dtype=np.float32)
+
+
 def main():
     # 参数解析
     parser = create_parser()
@@ -164,6 +227,10 @@ def main():
     guided_action_prob_start = args.guided_action_prob_start
     guided_action_decay_episodes = args.guided_action_decay_episodes
     guidance_close_radius = args.guidance_close_radius
+    train_smooth_decay_episodes = args.train_smooth_decay_episodes
+    train_guidance_radius = args.train_guidance_radius
+    train_near_target_radius = args.train_near_target_radius
+    train_max_turn_rate = np.deg2rad(args.train_max_turn_deg)
     stable_window = args.stable_window
     stable_success_threshold = args.stable_success_threshold
     
@@ -408,6 +475,10 @@ def main():
         done = False
         step_count = 0
         guide_prob = 0.0
+        prev_actions = [None for _ in range(uav_num)]
+        prev_targets = [None for _ in range(uav_num)]
+        prev_distances = [None for _ in range(uav_num)]
+        stagnation_counts = [0 for _ in range(uav_num)]
         
         # 单回合循环
         while not done:
@@ -442,12 +513,15 @@ def main():
                 guided_blend = 0.0
 
                 tgt = world.uav_targets[i]
+                uav_pos = np.array([world.UAVs[i].x, world.UAVs[i].y])
                 if tgt is not None and tgt != world.WAIT_TARGET:
-                    uav_pos = np.array([world.UAVs[i].x, world.UAVs[i].y])
                     target_pos = np.array([world.Users[tgt].x, world.Users[tgt].y])
                     dist_to_target = np.linalg.norm(target_pos - uav_pos)
+                    track_key = tgt
                 else:
-                    dist_to_target = np.inf
+                    target_pos = np.array(world.end_loc)
+                    dist_to_target = np.linalg.norm(target_pos - uav_pos)
+                    track_key = 'end'
 
                 if guide_prob > 0.0 and np.random.rand() < guide_prob:
                     guided_blend = 1.0
@@ -459,7 +533,37 @@ def main():
                 if guided_blend > 0.0:
                     actions[i] = (1.0 - guided_blend) * a + guided_blend * heuristic_actions[i]
 
+                if episode <= train_smooth_decay_episodes:
+                    same_target = prev_targets[i] == track_key
+                    if same_target and prev_distances[i] is not None:
+                        progress = prev_distances[i] - dist_to_target
+                        if dist_to_target > train_near_target_radius and progress < 0.01:
+                            stagnation_counts[i] += 1
+                        else:
+                            stagnation_counts[i] = 0
+                    else:
+                        prev_actions[i] = None
+                        prev_distances[i] = None
+                        stagnation_counts[i] = 0
+
+                    actions[i] = refine_training_action(
+                        actions[i],
+                        heuristic_actions[i],
+                        prev_actions[i],
+                        float(dist_to_target),
+                        world.dist_max,
+                        train_guidance_radius,
+                        train_near_target_radius,
+                        train_max_turn_rate,
+                        same_target=same_target,
+                        stagnation_steps=stagnation_counts[i],
+                    )
+
+                    prev_targets[i] = track_key
+                    prev_distances[i] = float(dist_to_target)
+
                 actions[i] = np.clip(actions[i], min_action, max_action)
+                prev_actions[i] = np.array(actions[i], dtype=np.float32)
 
                 # 训练时正常记录（无临时调试输出）
             
