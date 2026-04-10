@@ -382,7 +382,7 @@ class MultiUAVWorld(object):
     #             target = self.Users[self.uav_targets[i]]
     #             target_pos = np.array([target.x, target.y])
     #             distance = LA.norm(uav_loc - target_pos)
-                
+    #
     #             if distance <= self.distance:  # 到达巡检点
     #                 # if self.uav_transmit_flags[i]:  # 且传输完成
     #                     # 标记目标完成
@@ -574,7 +574,7 @@ class MultiUAVWorld(object):
                     # 等待状态：以当前位置信息作为“虚拟目标”，不会产生前进奖励
                     target_pos = np.array(uav_locations[i])
                 else:
-                    # 所有目标已完成，以自身当前位置为目标（不再是指向 end_loc）
+                    # 所有目标已完成，无人机原地悬停（无需飞往终点）
                     target_pos = np.array(uav_locations[i])
 
                 dist_cur = LA.norm(uav_locations[i] - target_pos)
@@ -639,7 +639,8 @@ class MultiUAVWorld(object):
         
         # 6. 团队奖励（所有目标完成）
         if sum(self.uav_reach_final) == self.uav_num:
-            print("🎆All UAVs reached the end!")
+            print("🎆All UAVs reached all targets!")
+            # 根据完成速度给予奖励，节省的时间越多，奖励越多
             team_bonus = 2000 + (self.T - self.t) * 10
             rewards = [r + team_bonus / self.uav_num for r in rewards]
             self.terminal = True

@@ -32,7 +32,7 @@ def create_parser():
     parser.add_argument("--comm_range", help="通信范围", type=float, default=5.0)
     parser.add_argument("--total_episode", help="总训练回合数", type=int, default=3000)
     parser.add_argument("--T", help="每回合最大时间步长", type=int, default=2500)
-    parser.add_argument("--warmup", help="用启发式策略填充回放缓冲的热启动回合数", type=int, default=5)
+    parser.add_argument("--warmup", help="用启发式策略填充回放缓冲的热启动回合数", type=int, default=50)
     return parser
 
 
@@ -287,7 +287,7 @@ def main():
     # 训练参数
     # 为了更快开始训练并便于调试，减小训练启动阈值并增频训练
     train_memory_size = 2000
-    train_freq = 1
+    train_freq = 5
     
     # 早停参数
     best_reward = -float('inf')
