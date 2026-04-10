@@ -221,52 +221,65 @@ class MultiUAVWorld(object):
 
     def _get_local_observation(self, uav_id):
         """
-        构造单个无人机的局部观测
-        
-        观测空间设计：
-        1. 自身状态: [x, y] (2维)
-        2. 目标位置: [pos_x, pos_y] (2维)
-        
-        
-        总维度: 2+2
+        构造单个无人机的局部观测。
+
+        使用“自身归一化位置 + 相对目标信息”的表示，
+        让策略更容易学会朝目标收敛，而不是仅凭绝对坐标硬拟合。
+
+        观测维度:
+        1. 自身位置: [x_norm, y_norm]
+        2. 相对目标向量: [dx_norm, dy_norm]
+        3. 目标距离: [dist_norm]
+        4. 指向目标的单位方向: [dir_x, dir_y]
+        5. 剩余时间比例: [remaining_time]
+        6. 是否存在有效目标: [has_active_target]
         """
         uav = self.UAVs[uav_id]
         obs = []
-        
-        # 1. 自身位置 (2维)
-        obs.extend([uav.x, uav.y])
-        
-        # 2. 目标位置 (2维)
+
+        max_dist = np.sqrt(self.max_x ** 2 + self.max_y ** 2) + 1e-8
+        remaining_time = max(0.0, (self.T - self.t) / max(self.T, 1))
+
+        # 1. 自身归一化位置
+        obs.extend([
+            uav.x / max(self.length, 1e-8),
+            uav.y / max(self.width, 1e-8)
+        ])
+
+        # 2. 解析当前目标
         tgt = self.uav_targets[uav_id]
+        has_active_target = 0.0
         if tgt is not None and tgt != self.WAIT_TARGET:
-            # 正常分配到某个巡检点（索引）
             target = self.Users[tgt]
             target_pos = np.array([target.x, target.y])
-            obs.extend([target_pos[0], target_pos[1]])
+            has_active_target = 1.0
         elif tgt == self.WAIT_TARGET:
-            # 等待分配：将目标位置设置为自身位置，表示当前无可分配巡检点
-            obs.extend([uav.x, uav.y])
+            target_pos = np.array([uav.x, uav.y])
         else:
-            # 如果该 UAV 已被标记为完成，则不把终点作为目标（保持当前位置）
-            # 否则仍然指向终点（仅在未标记完成但全局无目标时使用）
             if self.uav_reach_final[uav_id]:
-                obs.extend([uav.x, uav.y])
+                target_pos = np.array([uav.x, uav.y])
             else:
-                obs.extend([self.end_loc[0], self.end_loc[1]])
-        
-        # 3. 数据传输进度 (2维)
-        # obs.append(self.uav_data_sizes[uav_id])
-        # obs.append(1.0 if self.uav_transmit_flags[uav_id] else 0.0)
-        
-        # 4. 最近邻居信息 (最多K=3个邻居，每个4维)
-        # K_neighbors = 3
-        # neighbors_info = self._get_neighbors_info(uav_id, K=K_neighbors)
-        # obs.extend(neighbors_info)
-        
-        # 5. 时间信息 (1维)
-        # remaining_time = (self.T - self.t) / self.T  # 归一化
-        # obs.append(remaining_time)
-        
+                target_pos = np.array([self.end_loc[0], self.end_loc[1]])
+                has_active_target = 1.0
+
+        rel_vec = target_pos - np.array([uav.x, uav.y])
+        dist_to_target = LA.norm(rel_vec)
+        if dist_to_target > 1e-8:
+            dir_vec = rel_vec / dist_to_target
+        else:
+            dir_vec = np.zeros(2, dtype=np.float32)
+
+        # 3. 相对目标信息
+        obs.extend([
+            rel_vec[0] / max(self.length, 1e-8),
+            rel_vec[1] / max(self.width, 1e-8),
+            dist_to_target / max_dist,
+            dir_vec[0],
+            dir_vec[1],
+            remaining_time,
+            has_active_target
+        ])
+
         return np.array(obs, dtype=np.float32)
 
 
@@ -556,95 +569,110 @@ class MultiUAVWorld(object):
 
 
     def _compute_rewards(self, uav_locations, uav_locations_pre):
-        """计算每个无人机的奖励"""
+        """计算每个无人机的奖励。
+
+        设计原则:
+        1. 稀疏奖励只负责“是否到达目标”。
+        2. 稠密奖励只负责“是否更接近目标”，尽量避免相互打架。
+        3. 目标附近增加专门的绕圈/冲过目标惩罚，解决最后一段不收敛的问题。
+        """
         rewards = []
+
         for i in range(self.uav_num):
             reward = 0.0
 
-            # 对于已到达终点的 UAV，保持 reward 为 0（或可自定义），但仍需 append
-            if not self.uav_reach_final[i]:
-                # 1. 前进奖励
-                tgt = self.uav_targets[i]
-                if tgt is not None and tgt != self.WAIT_TARGET:
-                    target_pos = np.array([
-                        self.Users[tgt].x,
-                        self.Users[tgt].y
-                    ])
-                elif tgt == self.WAIT_TARGET:
-                    # 等待状态：以当前位置信息作为“虚拟目标”，不会产生前进奖励
-                    target_pos = np.array(uav_locations[i])
-                else:
-                    # 所有目标已完成，无人机原地悬停（无需飞往终点）
-                    target_pos = np.array(uav_locations[i])
+            if self.uav_reach_final[i]:
+                rewards.append(reward)
+                continue
 
-                dist_cur = LA.norm(uav_locations[i] - target_pos)
-                dist_pre = LA.norm(uav_locations_pre[i] - target_pos)
-                progress = dist_pre - dist_cur
-                # 原有的前进奖励（保持）
-                # 放大前进奖励以增强学习信号
-                reward += max(0, progress * 200)
+            tgt = self.uav_targets[i]
+            active_target = tgt is not None and tgt != self.WAIT_TARGET
 
-                # 稠密化奖励：当前位置相对于目标的方向性奖励
-                # 如果无人机朝目标方向移动（正向分量），给予额外小幅奖励
-                move_vec = uav_locations[i] - uav_locations_pre[i]
-                move_norm = LA.norm(move_vec) + 1e-8
-                dir_to_target = target_pos - uav_locations_pre[i]
-                dir_norm = LA.norm(dir_to_target) + 1e-8
+            if active_target:
+                target_pos = np.array([self.Users[tgt].x, self.Users[tgt].y])
+            else:
+                target_pos = np.array(uav_locations[i])
+
+            dist_cur = LA.norm(uav_locations[i] - target_pos)
+            dist_pre = LA.norm(uav_locations_pre[i] - target_pos)
+            progress = dist_pre - dist_cur
+
+            move_vec = uav_locations[i] - uav_locations_pre[i]
+            move_norm = LA.norm(move_vec)
+            dir_to_target = target_pos - uav_locations_pre[i]
+            dir_norm = LA.norm(dir_to_target)
+
+            if active_target:
+                # 小的时间代价，鼓励更短时间完成任务。
+                reward -= 0.2
+
+                # 1. 归一化进度奖励: 每一步是否真的更接近目标。
+                norm_progress = progress / max(self.dist_max, 1e-8)
+                reward += 24.0 * norm_progress
+
+                # 2. 势能差塑形: 越接近目标，最后几步的改进越值钱。
+                potential_pre = 1.0 / (dist_pre + 1.0)
+                potential_cur = 1.0 / (dist_cur + 1.0)
+                reward += 35.0 * (potential_cur - potential_pre)
+
+                # 3. 对齐奖励: 鼓励朝目标方向运动，反方向则受罚。
                 if move_norm > 1e-8 and dir_norm > 1e-8:
                     forward = np.dot(move_vec, dir_to_target) / (move_norm * dir_norm)
-                    forward = max(0.0, forward)  # 只对朝向目标的分量奖励
+                    forward = float(np.clip(forward, -1.0, 1.0))
+                    reward += 4.0 * forward
 
-                    reward += forward * 10.0
+                    # 4. 目标附近惩罚切向绕圈。
+                    if dist_pre < 4.0:
+                        close_factor = (4.0 - dist_pre) / 4.0
+                        tangential_ratio = np.sqrt(max(0.0, 1.0 - forward ** 2))
+                        reward -= 6.0 * close_factor * tangential_ratio
 
-                # 稠密化：基于与目标的接近度给小幅奖励（归一化）
-                max_dist = np.sqrt(self.max_x**2 + self.max_y**2)
-                proximity_reward = (max(0.0, (max_dist - dist_cur) / (max_dist + 1e-8))) * 2.0
-                reward += proximity_reward
+                # 5. 目标附近若没有实质推进，追加惩罚。
+                if dist_pre < 4.0:
+                    close_factor = (4.0 - dist_pre) / 4.0
+                    if progress < 0.0:
+                        reward -= 8.0 * close_factor
+                    elif progress < 0.02:
+                        reward -= 2.5 * close_factor
 
-                # 减轻停留惩罚，避免过早抑制探索
-                if abs(progress) < 0.02:
-                    reward -= 1
+                    # 距离很近时，仍然大步飞行通常会导致越过目标或绕圈。
+                    if dist_pre < 2.0:
+                        step_ratio = min(move_norm / max(self.dist_max, 1e-8), 1.0)
+                        reward -= 3.0 * ((2.0 - dist_pre) / 2.0) * step_ratio
 
-                # 接近其他无人机的惩罚
-                for j in range(self.uav_num):
-                    if i != j:
-                        
-                        
-                        # 如果目标无人机 j 已经到达终点并降落，则不再产生碰撞惩罚体积
-                        if self.uav_reach_final[j]:
-                            continue
-                        
-                        if self.uav_targets[i] is None and self.uav_targets[j] is None:
-                            continue
-                        
-                        dist_to_other = LA.norm(uav_locations[i] - uav_locations[j])
-                        if dist_to_other < self.safe_distance * 2:
-                            penalty = (self.safe_distance * 2 - dist_to_other) / self.safe_distance
-                            reward -= 20 * penalty
+                    # 6. 给最后一段额外收敛奖励，帮助稳定钻进到达阈值。
+                    reward += 8.0 * max(0.0, 1.5 - dist_cur) / 1.5
+                elif move_norm < 1e-3:
+                    reward -= 0.5
 
-                # 到达目标奖励（实际完成时调用 _on_reach_target 做标记和重新分配）
-                if tgt is not None and tgt != self.WAIT_TARGET:
-                    target_pos2 = np.array([
-                        self.Users[tgt].x,
-                        self.Users[tgt].y
-                    ])
-                    if LA.norm(uav_locations[i] - target_pos2) <= self.distance:
-                        print("UAV {} reached target {}".format(i, tgt))
-                        reward += 2000 # 到达目标点的强奖励
-                        # 处理真正到达：标记完成并分配下一个目标
-                        self._on_reach_target(i, tgt)
+                # 到达目标奖励（真正触发任务完成的唯一稀疏奖励）
+                if dist_cur <= self.distance:
+                    print("UAV {} reached target {}".format(i, tgt))
+                    reward += 400.0
+                    self._on_reach_target(i, tgt)
 
-            # 无论是否到达终点，都要 append，以保证 rewards 长度为 uav_num
+            # 接近其他无人机的惩罚
+            for j in range(self.uav_num):
+                if i == j or self.uav_reach_final[j]:
+                    continue
+
+                if self.uav_targets[i] is None and self.uav_targets[j] is None:
+                    continue
+
+                dist_to_other = LA.norm(uav_locations[i] - uav_locations[j])
+                if dist_to_other < self.safe_distance * 2:
+                    penalty = (self.safe_distance * 2 - dist_to_other) / self.safe_distance
+                    reward -= 20.0 * penalty
+
             rewards.append(reward)
-        
-        # 6. 团队奖励（所有目标完成）
+
+        # 团队奖励（所有目标完成）
         if sum(self.uav_reach_final) == self.uav_num:
-            print("🎆All UAVs reached all targets!")
-            # 根据完成速度给予奖励，节省的时间越多，奖励越多
-            team_bonus = 2000 + (self.T - self.t) * 10
+            print("All UAVs reached all targets!")
+            team_bonus = 1000.0 + max(self.T - self.t, 0) * 2.0
             rewards = [r + team_bonus / self.uav_num for r in rewards]
             self.terminal = True
-        
+
         return rewards
 
     def _check_done(self):
@@ -680,8 +708,8 @@ class MultiUAVWorld(object):
     @property
     def local_obs_dim(self):
         """单个无人机的观测维度"""
-        # 2(自身) + 2(目标)
-        return 2+2
+        # [x, y, dx, dy, dist, dir_x, dir_y, remaining_time, has_target]
+        return 9
     
     @property
     def action_dim(self):

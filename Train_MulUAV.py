@@ -26,13 +26,21 @@ def create_parser():
     parser.add_argument("--net_width", help="Actor网络宽度", type=int, default=256)
     parser.add_argument("--critic_width", help="Critic网络宽度", type=int, default=512)
     parser.add_argument("--exploration_strategy", help="探索策略", type=str, default="adaptive")
-    parser.add_argument("--min_exploration", help="最小探索噪声", type=float, default=0.3)
-    parser.add_argument("--max_exploration", help="最大探索噪声", type=float, default=0.6)
+    parser.add_argument("--min_exploration", help="最小探索噪声", type=float, default=0.05)
+    parser.add_argument("--max_exploration", help="最大探索噪声", type=float, default=0.25)
     parser.add_argument("--safe_distance", help="安全距离", type=float, default=0.1)
     parser.add_argument("--comm_range", help="通信范围", type=float, default=5.0)
     parser.add_argument("--total_episode", help="总训练回合数", type=int, default=3000)
     parser.add_argument("--T", help="每回合最大时间步长", type=int, default=2500)
-    parser.add_argument("--warmup", help="用启发式策略填充回放缓冲的热启动回合数", type=int, default=50)
+    parser.add_argument("--warmup", help="用启发式策略填充回放缓冲的热启动回合数", type=int, default=80)
+    parser.add_argument("--train_memory_size", help="开始训练前回放池的最小样本数", type=int, default=4000)
+    parser.add_argument("--train_freq", help="环境步到训练步的频率", type=int, default=2)
+    parser.add_argument("--warmup_train_steps", help="warmup完成后额外执行的bootstrap训练步数", type=int, default=1500)
+    parser.add_argument("--guided_action_prob_start", help="训练初期使用启发式动作的概率", type=float, default=0.25)
+    parser.add_argument("--guided_action_decay_episodes", help="启发式动作概率衰减到0所需回合数", type=int, default=1000)
+    parser.add_argument("--guidance_close_radius", help="目标附近启发式混合半径", type=float, default=3.0)
+    parser.add_argument("--stable_window", help="稳定成功率统计窗口", type=int, default=50)
+    parser.add_argument("--stable_success_threshold", help="触发stable模型保存的成功率阈值", type=float, default=0.95)
     return parser
 
 
@@ -150,6 +158,14 @@ def main():
     safe_distance = args.safe_distance
     comm_range = args.comm_range
     total_episode = args.total_episode
+    train_memory_size = args.train_memory_size
+    train_freq = args.train_freq
+    warmup_train_steps = args.warmup_train_steps
+    guided_action_prob_start = args.guided_action_prob_start
+    guided_action_decay_episodes = args.guided_action_decay_episodes
+    guidance_close_radius = args.guidance_close_radius
+    stable_window = args.stable_window
+    stable_success_threshold = args.stable_success_threshold
     
     # 创建日志目录
     logs_path = f'logs/MATD3_uav_{uav_num}/'
@@ -215,6 +231,10 @@ def main():
     print(f"通信范围: {comm_range} m")
     print(f"探索策略: {exploration_strategy}")
     print(f"总训练回合: {total_episode}")
+    print(f"训练启动样本数: {train_memory_size}")
+    print(f"训练频率: 每 {train_freq} 步训练一次")
+    print(f"Warmup回合数: {args.warmup}")
+    print(f"Warmup后Bootstrap步数: {warmup_train_steps}")
     print("="*70 + "\n")
     
     # 创建多无人机环境
@@ -286,14 +306,15 @@ def main():
     
     # 训练参数
     # 为了更快开始训练并便于调试，减小训练启动阈值并增频训练
-    train_memory_size = 2000
-    train_freq = 5
+    train_memory_size = args.train_memory_size
+    train_freq = args.train_freq
     
     # 早停参数
     best_reward = -float('inf')
-    best_success_rate = 0.0
+    best_completed_targets = -1
     patience = 300
     no_improve_count = 0
+    stable_success_history = deque(maxlen=max(1, stable_window))
     
     # 记录变量
     ep_rewards = []
@@ -317,6 +338,24 @@ def main():
         step = min(dist, dist_max)
         return np.array([phi, step])
 
+    def build_heuristic_actions(world, close_step_scale=1.0):
+        actions = []
+        for i in range(world.uav_num):
+            tgt = world.uav_targets[i]
+            uav_pos = np.array([world.UAVs[i].x, world.UAVs[i].y])
+
+            if tgt is not None and tgt != world.WAIT_TARGET:
+                target_pos = np.array([world.Users[tgt].x, world.Users[tgt].y])
+                dist_to_target = np.linalg.norm(target_pos - uav_pos)
+                step_scale = close_step_scale if dist_to_target < guidance_close_radius else 1.0
+                a = heuristic_action(uav_pos, target_pos, world.dist_max * step_scale)
+            else:
+                end_pos = np.array(world.end_loc)
+                a = heuristic_action(uav_pos, end_pos, world.dist_max * 0.5)
+
+            actions.append(a)
+        return actions
+
     warmup_episodes = args.warmup
     if warmup_episodes > 0 and replay_buffer.size < train_memory_size:
         print(f"Warmup: 生成 {warmup_episodes} 个启发式回合以填充回放池 (仅一次)...")
@@ -326,34 +365,31 @@ def main():
             step_count_w = 0
             while not done and step_count_w < T:
                 step_count_w += 1
-                actions = []
-                for i in range(world.uav_num):
-                    tgt = world.uav_targets[i]
-                    uav_pos = np.array([world.UAVs[i].x, world.UAVs[i].y])
-                    if tgt is not None and tgt != world.WAIT_TARGET:
-                        target_pos = np.array([world.Users[tgt].x, world.Users[tgt].y])
-                        a = heuristic_action(uav_pos, target_pos, world.dist_max)
-                    else:
-                        end_pos = np.array(world.end_loc)
-                        a = heuristic_action(uav_pos, end_pos, world.dist_max * 0.5)
-                    actions.append(a)
+                actions = build_heuristic_actions(world, close_step_scale=0.6)
 
                 next_obs_list, rewards, done, info, uav_reach = world.step(actions)
 
                 global_state = np.concatenate(obs_list)
                 next_global_state = np.concatenate(next_obs_list)
                 all_actions = np.concatenate(actions)
+                done_flags = np.full(world.uav_num, float(done), dtype=np.float32)
 
                 replay_buffer.add(
                     global_state,
                     all_actions,
                     np.array(rewards, dtype=np.float32),
                     next_global_state,
-                    np.array(uav_reach, dtype=np.float32)
+                    done_flags
                 )
 
                 obs_list = next_obs_list
         print(f"Warmup complete. Replay size = {replay_buffer.size}")
+
+    if replay_buffer.size >= train_memory_size and warmup_train_steps > 0:
+        print(f"Bootstrap training: 使用 warmup 经验先训练 {warmup_train_steps} 步...")
+        for _ in tqdm(range(warmup_train_steps), ascii=True, unit='updates', leave=False):
+            matd3.train(replay_buffer)
+        print("Bootstrap training complete.")
     
     # ==================== 主训练循环 ====================
     for episode in tqdm(range(1, total_episode+1), ascii=True, unit='episodes'):
@@ -371,6 +407,7 @@ def main():
         episode_reward = 0
         done = False
         step_count = 0
+        guide_prob = 0.0
         
         # 单回合循环
         while not done:
@@ -382,6 +419,14 @@ def main():
             else:
                 current_noise = max(min_exploration, 
                                    max_exploration * (1 - episode / total_episode))
+
+            if guided_action_decay_episodes > 0:
+                guide_prob = max(
+                    0.0,
+                    guided_action_prob_start * (1.0 - (episode - 1) / guided_action_decay_episodes)
+                )
+            else:
+                guide_prob = 0.0
             
             # MA-TD3选择动作 策略网络 + 探索噪声
             actions = matd3.select_actions(
@@ -389,10 +434,32 @@ def main():
                 add_noise=True,
                 noise_scale=current_noise
             )
-            
-            #对每一个动作进行裁剪(虽说在MATD3里已经裁剪过了，这里再保险一次)
-            for i,a in enumerate(actions):
-                actions[i] = np.clip(a, min_action, max_action)
+
+            heuristic_actions = build_heuristic_actions(world, close_step_scale=0.6)
+
+            # 对每一个动作进行裁剪，并在训练前期混入一定比例的启发式动作。
+            for i, a in enumerate(actions):
+                guided_blend = 0.0
+
+                tgt = world.uav_targets[i]
+                if tgt is not None and tgt != world.WAIT_TARGET:
+                    uav_pos = np.array([world.UAVs[i].x, world.UAVs[i].y])
+                    target_pos = np.array([world.Users[tgt].x, world.Users[tgt].y])
+                    dist_to_target = np.linalg.norm(target_pos - uav_pos)
+                else:
+                    dist_to_target = np.inf
+
+                if guide_prob > 0.0 and np.random.rand() < guide_prob:
+                    guided_blend = 1.0
+
+                # 最后一段是当前 baseline 最容易失败的地方，训练前期额外混入一部分启发式动作。
+                if dist_to_target < guidance_close_radius and episode <= guided_action_decay_episodes:
+                    guided_blend = max(guided_blend, 0.5)
+
+                if guided_blend > 0.0:
+                    actions[i] = (1.0 - guided_blend) * a + guided_blend * heuristic_actions[i]
+
+                actions[i] = np.clip(actions[i], min_action, max_action)
 
                 # 训练时正常记录（无临时调试输出）
             
@@ -403,6 +470,7 @@ def main():
             global_state = np.concatenate(obs_list)
             next_global_state = np.concatenate(next_obs_list)
             all_actions = np.concatenate(actions)
+            done_flags = np.full(world.uav_num, float(done), dtype=np.float32)
             
             # 团队奖励: 使用未到达终点的无人机的平均奖励，
             # 避免已完成的无人机（其即时奖励可能变小）把团队平均拉低，
@@ -421,7 +489,7 @@ def main():
                 all_actions,
                 np.array(rewards, dtype=np.float32),
                 next_global_state,
-                np.array(uav_reach, dtype=np.float32)
+                done_flags
             )
             
             # 训练网络,按一定频率训练
@@ -454,12 +522,20 @@ def main():
         # 回合结束统计
         ep_rewards.append(episode_reward)
         # ep_collision.append(1 if info.get('collision', False) else 0)
-        ep_completed_targets.append(info.get('completed_targets', 0))
+        completed_targets = info.get('completed_targets', 0)
+        episode_success = 1 if completed_targets >= user_num else 0
+        stable_success_history.append(episode_success)
+        stable_success_rate = float(np.mean(stable_success_history))
+        ep_completed_targets.append(completed_targets)
         ep_exploration_noise.append(current_noise)
         
         # 🔥 新增：将每一轮的总奖励和完成目标数写入 TensorBoard
         writer.add_scalar('Metrics/Episode_Reward', episode_reward, episode)
-        writer.add_scalar('Metrics/Completed_Targets', info.get('completed_targets', 0), episode)
+        writer.add_scalar('Metrics/Completed_Targets', completed_targets, episode)
+        writer.add_scalar('Metrics/Success', episode_success, episode)
+        writer.add_scalar('Metrics/Stable_Success_Rate', stable_success_rate, episode)
+        writer.add_scalar('Metrics/Guide_Prob', guide_prob, episode)
+        writer.add_scalar('Metrics/Episode_TimeSec', time.time() - t_start, episode)
         
         # 更新探索策略
         if exploration_strategy == "adaptive":
@@ -474,13 +550,27 @@ def main():
             matd3.save(episode, model_path)
         
         # 🔥 新增：保存最佳模型并更新早停计数器
-        if episode_reward > best_reward:
+        if completed_targets > best_completed_targets or (
+            completed_targets == best_completed_targets and episode_reward > best_reward
+        ):
+            best_completed_targets = completed_targets
             best_reward = episode_reward
-            matd3.save('best', model_path)  # 保存后缀为 epbest 的模型
-            print(f"🌟 发现新最佳模型！当前最高奖励刷新为: {best_reward:.2f}")
-            no_improve_count = 0  # 奖励有提升，重置早停计数器
+            matd3.save('best', model_path)
+            print(
+                f"发现新最优模型！完成目标数: {best_completed_targets}/{user_num}, "
+                f"奖励: {best_reward:.2f}"
+            )
+            no_improve_count = 0
         else:
-            no_improve_count += 1 # 奖励未提升，增加计数
+            no_improve_count += 1
+
+        if len(stable_success_history) == stable_window and stable_success_rate >= stable_success_threshold:
+            matd3.save('stable', model_path)
+            print(
+                f"\n稳定完成阈值已达到：最近 {stable_window} 回合成功率 "
+                f"{stable_success_rate:.2%}，已保存 stable 模型并提前结束训练。"
+            )
+            break
            
         # 早停检查
         # if no_improve_count > patience:
