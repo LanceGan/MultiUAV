@@ -40,11 +40,14 @@ def create_parser():
     parser.add_argument("--guided_action_decay_episodes", help="启发式动作概率衰减到0所需回合数", type=int, default=1000)
     parser.add_argument("--guidance_close_radius", help="目标附近启发式混合半径", type=float, default=3.0)
     parser.add_argument("--train_smooth_decay_episodes", help="训练侧平滑动作修正的持续回合数", type=int, default=1500)
-    parser.add_argument("--train_guidance_radius", help="训练侧轨迹修正半径，单位为100m", type=float, default=6.0)
-    parser.add_argument("--train_near_target_radius", help="训练侧近目标强修正半径，单位为100m", type=float, default=2.0)
-    parser.add_argument("--train_max_turn_deg", help="训练侧单步最大转向角，单位为度", type=float, default=20.0)
-    parser.add_argument("--stable_window", help="稳定成功率统计窗口", type=int, default=50)
+    parser.add_argument("--train_guidance_radius", help="训练侧轨迹修正半径，单位为100m", type=float, default=5.0)
+    parser.add_argument("--train_near_target_radius", help="训练侧近目标强修正半径，单位为100m", type=float, default=0.5)
+    parser.add_argument("--train_max_turn_deg", help="训练侧单步最大转向角，单位为度", type=float, default=5)
+    parser.add_argument("--stable_window", help="稳定成功率统计窗口", type=int, default=100)
     parser.add_argument("--stable_success_threshold", help="触发stable模型保存的成功率阈值", type=float, default=0.95)
+    parser.add_argument("--assignment_mode", help="任务分配模式: sequence / hybrid / dynamic", type=str, default="sequence")
+    parser.add_argument("--model_root", help="模型保存根目录", type=str, default="./results/models/MA-TD3")
+    parser.add_argument("--model_subdir", help="模型保存子目录", type=str, default="Ours")
     return parser
 
 
@@ -143,6 +146,11 @@ def get_moving_average(mylist, N):
     return moving_aves
 
 
+def use_scenario_default(current_value, default_value, scenario_value):
+    """仅在用户未显式改参时，按场景覆盖默认值。"""
+    return scenario_value if current_value == default_value else current_value
+
+
 # ==================== 主训练函数 ====================
 def wrap_angle(angle):
     return (angle + np.pi) % (2 * np.pi) - np.pi
@@ -164,6 +172,8 @@ def refine_training_action(
     raw_step = float(raw_action[1])
     heuristic_phi = float(heuristic[0])
     heuristic_step = float(heuristic[1])
+    heading_deadband = np.deg2rad(3.0 if dist_to_target < guidance_radius else 6.0)
+    anti_zigzag_band = np.deg2rad(10.0 if dist_to_target < guidance_radius else 16.0)
 
     if not same_target:
         blend = 0.9
@@ -182,7 +192,11 @@ def refine_training_action(
     if stagnation_steps >= 2:
         blend = max(blend, 0.85)
 
-    refined_phi = wrap_angle(raw_phi + blend * wrap_angle(heuristic_phi - raw_phi))
+    desired_heading_delta = wrap_angle(heuristic_phi - raw_phi)
+    if abs(desired_heading_delta) < heading_deadband:
+        refined_phi = heuristic_phi
+    else:
+        refined_phi = wrap_angle(raw_phi + blend * desired_heading_delta)
     refined_step = (1.0 - blend) * raw_step + blend * heuristic_step
 
     if dist_to_target > guidance_radius:
@@ -194,9 +208,23 @@ def refine_training_action(
     if prev_action is not None and same_target:
         prev_phi = float(prev_action[0])
         prev_step = float(prev_action[1])
+        prev_heading_err = wrap_angle(prev_phi - heuristic_phi)
         phi_delta = wrap_angle(refined_phi - prev_phi)
+        if abs(prev_heading_err) < anti_zigzag_band and abs(phi_delta) < anti_zigzag_band:
+            candidate_phi = wrap_angle(prev_phi + 0.5 * phi_delta)
+            candidate_err = wrap_angle(candidate_phi - heuristic_phi)
+            if prev_heading_err * candidate_err < 0:
+                refined_phi = heuristic_phi
+            else:
+                refined_phi = candidate_phi
+            phi_delta = wrap_angle(refined_phi - prev_phi)
         phi_delta = float(np.clip(phi_delta, -max_turn_rate, max_turn_rate))
         refined_phi = wrap_angle(prev_phi + phi_delta)
+        heading_err_after = wrap_angle(refined_phi - heuristic_phi)
+        if prev_heading_err * heading_err_after < 0 and abs(prev_heading_err) < anti_zigzag_band:
+            refined_phi = heuristic_phi
+        if abs(wrap_angle(refined_phi - heuristic_phi)) < heading_deadband:
+            refined_phi = heuristic_phi
         refined_step = 0.6 * prev_step + 0.4 * refined_step
 
     refined_step = float(np.clip(refined_step, 0.0, dist_max))
@@ -220,6 +248,8 @@ def main():
     max_exploration = args.max_exploration
     safe_distance = args.safe_distance
     comm_range = args.comm_range
+    model_root = args.model_root
+    model_subdir = args.model_subdir.strip()
     total_episode = args.total_episode
     train_memory_size = args.train_memory_size
     train_freq = args.train_freq
@@ -233,6 +263,10 @@ def main():
     train_max_turn_rate = np.deg2rad(args.train_max_turn_deg)
     stable_window = args.stable_window
     stable_success_threshold = args.stable_success_threshold
+    assignment_mode = str(args.assignment_mode).strip().lower()
+
+    if assignment_mode not in ("sequence", "hybrid", "dynamic"):
+        raise ValueError(f"不支持的 assignment_mode: {assignment_mode}")
     
     # 创建日志目录
     logs_path = f'logs/MATD3_uav_{uav_num}/'
@@ -257,12 +291,18 @@ def main():
     
     # 巡检序列文件路径
     sequence_path = None
+    # sequence_algorithm = model_subdir if model_subdir else ("Ours","GA","PSO")[0]
     
+    if assignment_mode not in ("sequence", "hybrid", "dynamic"):
+        raise ValueError(f"不支持的 assignment_mode: {assignment_mode}")
+
     if uav_num == 2:
         user_num = 20
         Length = 40
         Width = 40
-        sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
+        # sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
+        if assignment_mode in ("sequence", "hybrid"):
+            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
         ini_loc = [14.76, 14.83]
         end_loc = [27.62, 23.47]
         BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
@@ -270,25 +310,78 @@ def main():
     elif uav_num == 3:
         # 5kmx5km area,30 users, 3 UAVs
         user_num = 30
-        Length = 50
-        Width = 50
-        sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        ini_loc = [32.88, 22.67]
-        end_loc = [21.62, 48.47]
-        BS_loc=np.array([[1.879, 1.034, 0.025],[3.373, 1.031, 0.025],[0.929, 2.545, 0.025],
-                        [2.501, 2.545, 0.025],[4.059, 2.545, 0.025],[1.888, 4.060, 0.025],[3.378, 4.060, 0.025]])
+        Length = 40
+        Width = 40
+        # sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
+        if assignment_mode in ("sequence", "hybrid"):
+            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
+        ini_loc = [14.76, 14.83]
+        end_loc = [27.62, 23.47]
+        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
+                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
+        # ini_loc = [32.88, 22.67]
+        # end_loc = [21.62, 48.47]
+        # BS_loc=np.array([[1.879, 1.034, 0.025],[3.373, 1.031, 0.025],[0.929, 2.545, 0.025],
+        #                 [2.501, 2.545, 0.025],[4.059, 2.545, 0.025],[1.888, 4.060, 0.025],[3.378, 4.060, 0.025]])
     elif uav_num == 4:
         # 6kmx6km area,40 users, 4 UAVs
         user_num = 40
-        Length = 60
-        Width = 60
-        sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        ini_loc = [34.12, 28.79]
-        end_loc = [38.46, 45.23]
-        BS_loc=np.array([[2.255, 1.241, 0.025],[4.047, 1.238, 0.025],[1.115, 3.054, 0.025],
-                         [3.002, 3.054, 0.025],[4.871, 3.054, 0.025],[2.265, 4.872, 0.025],[4.053, 4.872, 0.025]])
-    
-    
+        Length = 40
+        Width = 40
+        # sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
+        if assignment_mode in ("sequence", "hybrid"):
+            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
+        ini_loc = [14.76, 14.83]
+        end_loc = [27.62, 23.47]
+        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
+                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
+        # ini_loc = [34.12, 28.79]
+        # end_loc = [38.46, 45.23]
+        # BS_loc=np.array([[2.255, 1.241, 0.025],[4.047, 1.238, 0.025],[1.115, 3.054, 0.025],
+        #                  [3.002, 3.054, 0.025],[4.871, 3.054, 0.025],[2.265, 4.872, 0.025],[4.053, 4.872, 0.025]])
+
+    # 固定序列的 3/4 机训练更容易被探索噪声拉偏，这里仅在“保持默认参数”时增强稳定性。
+    if assignment_mode == "sequence":
+        if uav_num == 3:
+            min_exploration = use_scenario_default(min_exploration, 0.05, 0.03)
+            max_exploration = use_scenario_default(max_exploration, 0.25, 0.14)
+            train_memory_size = use_scenario_default(train_memory_size, 4000, 6000)
+            train_freq = use_scenario_default(train_freq, 2, 1)
+            warmup_train_steps = use_scenario_default(warmup_train_steps, 1500, 3000)
+            guided_action_prob_start = use_scenario_default(guided_action_prob_start, 0.25, 0.45)
+            guided_action_decay_episodes = use_scenario_default(guided_action_decay_episodes, 1000, 1800)
+            guidance_close_radius = use_scenario_default(guidance_close_radius, 3.0, 4.0)
+            train_smooth_decay_episodes = use_scenario_default(train_smooth_decay_episodes, 1500, 2200)
+            train_guidance_radius = use_scenario_default(train_guidance_radius, 5.0, 6.0)
+            train_near_target_radius = use_scenario_default(train_near_target_radius, 0.5, 0.8)
+            train_max_turn_rate = np.deg2rad(use_scenario_default(args.train_max_turn_deg, 5, 7))
+            stable_window = use_scenario_default(stable_window, 100, 120)
+            warmup_episodes_cfg = use_scenario_default(args.warmup, 80, 120)
+        elif uav_num == 4:
+            min_exploration = use_scenario_default(min_exploration, 0.05, 0.02)
+            max_exploration = use_scenario_default(max_exploration, 0.25, 0.10)
+            train_memory_size = use_scenario_default(train_memory_size, 4000, 8000)
+            train_freq = use_scenario_default(train_freq, 2, 1)
+            warmup_train_steps = use_scenario_default(warmup_train_steps, 1500, 4500)
+            guided_action_prob_start = use_scenario_default(guided_action_prob_start, 0.25, 0.60)
+            guided_action_decay_episodes = use_scenario_default(guided_action_decay_episodes, 1000, 2600)
+            guidance_close_radius = use_scenario_default(guidance_close_radius, 3.0, 4.5)
+            train_smooth_decay_episodes = use_scenario_default(train_smooth_decay_episodes, 1500, 3000)
+            train_guidance_radius = use_scenario_default(train_guidance_radius, 5.0, 7.0)
+            train_near_target_radius = use_scenario_default(train_near_target_radius, 0.5, 1.0)
+            train_max_turn_rate = np.deg2rad(use_scenario_default(args.train_max_turn_deg, 5, 8))
+            stable_window = use_scenario_default(stable_window, 100, 150)
+            warmup_episodes_cfg = use_scenario_default(args.warmup, 80, 200)
+        else:
+            warmup_episodes_cfg = args.warmup
+    else:
+        warmup_episodes_cfg = args.warmup
+
+    if model_subdir:
+        model_path = os.path.join(model_root, f"UAV_{uav_num}", model_subdir)
+    else:
+        model_path = os.path.join(model_root, f"UAV_{uav_num}")
+
     print("="*70)
     print("MA-TD3 多无人机协同巡检训练")
     print("="*70)
@@ -297,11 +390,15 @@ def main():
     print(f"安全距离: {safe_distance} m")
     print(f"通信范围: {comm_range} m")
     print(f"探索策略: {exploration_strategy}")
+    print(f"任务分配模式: {assignment_mode}")
+    print(f"模型保存路径: {model_path}")
     print(f"总训练回合: {total_episode}")
     print(f"训练启动样本数: {train_memory_size}")
     print(f"训练频率: 每 {train_freq} 步训练一次")
-    print(f"Warmup回合数: {args.warmup}")
+    print(f"Warmup回合数: {warmup_episodes_cfg}")
     print(f"Warmup后Bootstrap步数: {warmup_train_steps}")
+    print(f"探索噪声范围: [{min_exploration:.3f}, {max_exploration:.3f}]")
+    print(f"启发式混合起始概率: {guided_action_prob_start:.2f}")
     print("="*70 + "\n")
     
     # 创建多无人机环境
@@ -322,7 +419,7 @@ def main():
         sequence_path=sequence_path,
         safe_distance=safe_distance,
         comm_range=comm_range,
-        cooperative_mode='sequential'
+        cooperative_mode=assignment_mode
     )
     
     # 状态和动作维度
@@ -357,8 +454,7 @@ def main():
         n_agents=uav_num
     )
     
-    # 模型保存路径
-    model_path = './results/models/MA-TD3/UAV_%d/' % uav_num
+    # 模型保存路径已在前面统一解析
     mkdir(model_path)
     
     
@@ -416,6 +512,8 @@ def main():
                 dist_to_target = np.linalg.norm(target_pos - uav_pos)
                 step_scale = close_step_scale if dist_to_target < guidance_close_radius else 1.0
                 a = heuristic_action(uav_pos, target_pos, world.dist_max * step_scale)
+            elif tgt == world.WAIT_TARGET or world.uav_reach_final[i]:
+                a = np.array([0.0, 0.0], dtype=np.float32)
             else:
                 end_pos = np.array(world.end_loc)
                 a = heuristic_action(uav_pos, end_pos, world.dist_max * 0.5)
@@ -423,7 +521,7 @@ def main():
             actions.append(a)
         return actions
 
-    warmup_episodes = args.warmup
+    warmup_episodes = warmup_episodes_cfg
     if warmup_episodes > 0 and replay_buffer.size < train_memory_size:
         print(f"Warmup: 生成 {warmup_episodes} 个启发式回合以填充回放池 (仅一次)...")
         for w in range(warmup_episodes):
@@ -518,6 +616,10 @@ def main():
                     target_pos = np.array([world.Users[tgt].x, world.Users[tgt].y])
                     dist_to_target = np.linalg.norm(target_pos - uav_pos)
                     track_key = tgt
+                elif tgt == world.WAIT_TARGET or world.uav_reach_final[i]:
+                    target_pos = uav_pos.copy()
+                    dist_to_target = 0.0
+                    track_key = 'wait'
                 else:
                     target_pos = np.array(world.end_loc)
                     dist_to_target = np.linalg.norm(target_pos - uav_pos)

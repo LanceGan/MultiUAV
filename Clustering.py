@@ -187,11 +187,14 @@ if __name__ == '__main__':
     offloads = np.random.uniform(10, 100, size=Users_num) 
     
     UAV_num = 4
-    mode = ('origin','comm_4D')[1]
+    mode = ('origin','comm_4D')[0]
     random_seed = int(np.random.uniform(0,100))
     
     if mode == 'origin':
         labels, centers, inertia = kmeans_4d(pts, UAV_num, weights=(1.0, 0, 0, 0), max_iters=1000, random_state=random_seed, point_scale=1)
+        print("Labels:", labels)
+        print("Spatial Centers:", centers)
+        print("Overall Augmented Inertia:", inertia)
         np.savetxt('results/datas/cluster/Users_%d_Clustered'% Users_num+'UAV_'+str(UAV_num)+'.txt', labels, fmt='%d')
         
     elif mode == 'comm_4D':

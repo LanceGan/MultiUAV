@@ -2,6 +2,7 @@
 
 from matplotlib import pyplot as plt
 import numpy as np 
+import os
 def load_user(path,user_num):
     f = open(path, 'r')
     x = []
@@ -46,16 +47,16 @@ def load_trajectory(trajectory_file):
 
         
 if __name__ == '__main__':
-    user_num = 40 
-    UAV_NUM = 4
+    user_num = 20 
+    UAV_NUM = 2
     
-    ini_loc = [[14.76, 14.83],[32.88, 22.67],[34.12, 28.79],[34.46, 30.35]][2]
-    end_loc = [[27.62, 23.47],[21.62, 48.47],[38.46, 45.23],[50.12, 50.23]][2]
+    ini_loc = [14.76, 14.83]
+    end_loc = [27.62, 23.47]
     
     users_path = 'results/datas/Users_%d.txt' % user_num
     x0_user, y0_user = load_user(users_path,user_num)
-    mode = ('user','cluster','trajectory')[1]  
-    mode_add = ('origin','comm','None')[1]
+    mode = ('user','cluster','trajectory')[0]  
+    mode_add = ('origin','comm','None')[2]
     
     
     trajectory_file = r'results/trajectory/MultiUAV_uav2_ep9.npz'
@@ -72,12 +73,12 @@ if __name__ == '__main__':
         print("✗ 未选择聚类结果文件")
     
 
-    Radio_Map = ['G2A','A2G','None'][2]
+    Radio_Map = ['G2A','A2G','None'][0]
 
     #画Radio Map 
     fig_1 = plt.figure(30)
     if Radio_Map == 'A2G':
-        npzfile = np.load('results/datas/Radio_datas_A2G.npz')
+        npzfile = np.load('results/datas/radiomap/Radio_datas_A2G.npz')
         OutageMapActual = npzfile['arr_0']
         OutageMapActual_SINR = npzfile['arr_1']
         X_vec = npzfile['arr_2']  # [0,1....100]标号
@@ -87,7 +88,7 @@ if __name__ == '__main__':
         cbar = plt.colorbar(ticks=v)
         cbar.set_label('SNR', labelpad=20, rotation=270, fontsize=14)
     elif Radio_Map =='G2A':
-        npzfile = np.load('results/datas/Radio_datas.npz')
+        npzfile = np.load('results/datas/radiomap/Radio_datas.npz')
         OutageMapActual = npzfile['arr_0']
         OutageMapActual_SINR = npzfile['arr_1']
         X_vec = npzfile['arr_2']  # [0,1....100]标号
@@ -151,6 +152,9 @@ if __name__ == '__main__':
     elif mode == 'trajectory':
         save_path = 'results/figs/trajectory/'+'UAV_'+str(uav_num)+'_trajectory_'+str(Radio_Map)+'.png'
     
+    if not os.path.exists(os.path.dirname(save_path)):
+        os.makedirs(os.path.dirname(save_path))
+        
     plt.savefig(save_path, format='png', bbox_inches='tight', dpi=300)
     plt.close()
     

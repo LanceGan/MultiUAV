@@ -14,9 +14,9 @@ from MultiUAVWorld import MultiUAVWorld
 
 TRAJECTORY_PROFILES = {
     'smooth': {
-        'guidance_radius': 6.0,
-        'near_target_radius': 2.0,
-        'max_turn_deg': 20.0,
+        'guidance_radius': 7.0,
+        'near_target_radius': 2.2,
+        'max_turn_deg': 16.0,
     },
     'balanced': {
         'guidance_radius': 4.5,
@@ -49,6 +49,16 @@ def resolve_model_episode(model_episode, model_path):
             return candidate
 
     return 'final'
+
+
+def has_model_files(model_path):
+    """判断目录中是否存在 MATD3 模型文件。"""
+    if not os.path.isdir(model_path):
+        return False
+    return any(
+        name.startswith('matd3_critic_ep') and name.endswith('.pth')
+        for name in os.listdir(model_path)
+    )
 
 
 def resolve_trajectory_profile(profile_name, guidance_radius, near_target_radius, max_turn_deg):
@@ -98,6 +108,8 @@ def refine_action(
     raw_step = float(raw_action[1])
     heuristic_phi = float(heuristic[0])
     heuristic_step = float(heuristic[1])
+    heading_deadband = np.deg2rad(3.0 if dist_to_target < guidance_radius else 6.0)
+    anti_zigzag_band = np.deg2rad(10.0 if dist_to_target < guidance_radius else 16.0)
 
     if not same_target:
         blend = 0.92
@@ -116,8 +128,11 @@ def refine_action(
     if stagnation_steps >= 2:
         blend = max(blend, 0.9)
 
-    refined_phi = raw_phi + blend * wrap_angle(heuristic_phi - raw_phi)
-    refined_phi = wrap_angle(refined_phi)
+    desired_heading_delta = wrap_angle(heuristic_phi - raw_phi)
+    if abs(desired_heading_delta) < heading_deadband:
+        refined_phi = heuristic_phi
+    else:
+        refined_phi = wrap_angle(raw_phi + blend * desired_heading_delta)
     refined_step = (1.0 - blend) * raw_step + blend * heuristic_step
 
     if dist_to_target > guidance_radius:
@@ -130,9 +145,23 @@ def refine_action(
     if prev_action is not None and same_target:
         prev_phi = float(prev_action[0])
         prev_step = float(prev_action[1])
+        prev_heading_err = wrap_angle(prev_phi - heuristic_phi)
         phi_delta = wrap_angle(refined_phi - prev_phi)
+        if abs(prev_heading_err) < anti_zigzag_band and abs(phi_delta) < anti_zigzag_band:
+            candidate_phi = wrap_angle(prev_phi + 0.5 * phi_delta)
+            candidate_err = wrap_angle(candidate_phi - heuristic_phi)
+            if prev_heading_err * candidate_err < 0:
+                refined_phi = heuristic_phi
+            else:
+                refined_phi = candidate_phi
+            phi_delta = wrap_angle(refined_phi - prev_phi)
         phi_delta = float(np.clip(phi_delta, -max_turn_rate, max_turn_rate))
         refined_phi = wrap_angle(prev_phi + phi_delta)
+        heading_err_after = wrap_angle(refined_phi - heuristic_phi)
+        if prev_heading_err * heading_err_after < 0 and abs(prev_heading_err) < anti_zigzag_band:
+            refined_phi = heuristic_phi
+        if abs(wrap_angle(refined_phi - heuristic_phi)) < heading_deadband:
+            refined_phi = heuristic_phi
         refined_step = 0.65 * prev_step + 0.35 * refined_step
 
     refined_step = float(np.clip(refined_step, 0.0, dist_max))
@@ -268,9 +297,12 @@ def test_matd3_model(
     model_episode='auto',
     uav_num=3,
     test_episodes=10,
+    model_root='./results/models/MA-TD3',
+    model_subdir='Ours',
     T=2500,
     safe_distance=0.1,
     comm_range=5.0,
+    assignment_mode='sequence',
     pure_policy=False,
     trajectory_profile='smooth',
     guidance_radius=None,
@@ -281,7 +313,15 @@ def test_matd3_model(
     测试MA-TD3模型
     """
     # 动态设定模型路径和结果保存路径
-    model_path = f'./results/models/MA-TD3/UAV_{uav_num}/'
+    base_model_path = os.path.join(model_root, f"UAV_{uav_num}")
+    if model_subdir:
+        model_path = os.path.join(base_model_path, model_subdir)
+        if not has_model_files(model_path) and has_model_files(base_model_path):
+            print(f"未在子目录 {model_path} 找到模型，回退到旧目录 {base_model_path}")
+            model_path = base_model_path
+            model_subdir = ''
+    else:
+        model_path = base_model_path
     resolved_model_episode = resolve_model_episode(model_episode, model_path)
     trajectory_cfg = resolve_trajectory_profile(
         trajectory_profile,
@@ -307,36 +347,40 @@ def test_matd3_model(
     data_size = 300
     
     # 根据无人机数量动态配置场景参数
+    assignment_mode = str(assignment_mode).strip().lower()
+    if assignment_mode not in ('sequence', 'hybrid', 'dynamic'):
+        raise ValueError(f"不支持的 assignment_mode: {assignment_mode}")
+
     if uav_num == 2:
         user_num = 20
         Length = 40
         Width = 40
         # sequence_path = './results/datas/sequence/Users_20_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
-        sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
+        sequence_path = None if assignment_mode == 'dynamic' else './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
         ini_loc = [14.76, 14.83]
         end_loc = [27.62, 23.47]
         BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
                         [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
     elif uav_num == 3:
         user_num = 30
-        Length = 50
-        Width = 50
+        Length = 40
+        Width = 40
         # sequence_path = './results/datas/sequence/Users_30_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
-        sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        ini_loc = [32.88, 22.67]
-        end_loc = [21.62, 48.47]
-        BS_loc=np.array([[1.879, 1.034, 0.025],[3.373, 1.031, 0.025],[0.929, 2.545, 0.025],
-                        [2.501, 2.545, 0.025],[4.059, 2.545, 0.025],[1.888, 4.060, 0.025],[3.378, 4.060, 0.025]])
+        sequence_path = None if assignment_mode == 'dynamic' else './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
+        ini_loc = [14.76, 14.83]
+        end_loc = [27.62, 23.47]
+        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
+                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
     elif uav_num == 4:
         user_num = 40
-        Length = 60
-        Width = 60
+        Length = 40
+        Width = 40
         # sequence_path = './results/datas/sequence/Users_40_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
-        sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        ini_loc = [34.12, 28.79]
-        end_loc = [38.46, 45.23]
-        BS_loc=np.array([[2.255, 1.241, 0.025],[4.047, 1.238, 0.025],[1.115, 3.054, 0.025],
-                         [3.002, 3.054, 0.025],[4.871, 3.054, 0.025],[2.265, 4.872, 0.025],[4.053, 4.872, 0.025]])
+        sequence_path = None if assignment_mode == 'dynamic' else './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
+        ini_loc = [14.76, 14.83]
+        end_loc = [27.62, 23.47]
+        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
+                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
     else:
         raise ValueError("不支持的无人机数量！")
 
@@ -344,12 +388,14 @@ def test_matd3_model(
     print("MA-TD3 多无人机模型测试")
     print("="*80)
     print(f"模型加载路径: {model_path}")
+    print(f"模型子目录: {model_subdir if model_subdir else '(none)'}")
     print(f"模型版本: {resolved_model_episode}")
     print(f"无人机数量: {uav_num}")
     print(f"测试回合数: {test_episodes}")
     print(f"检查点数量: {user_num}")
     print(f"安全距离: {safe_distance}")
     print(f"通信范围: {comm_range}")
+    print(f"任务分配模式: {assignment_mode}")
     print(f"单回合最大步数: {T}")
     print(f"纯策略测试: {pure_policy}")
     print(f"轨迹档位: {trajectory_profile}")
@@ -376,7 +422,7 @@ def test_matd3_model(
         sequence_path=sequence_path,  # 🔥 确保传入序列路径
         safe_distance=safe_distance,
         comm_range=comm_range,
-        cooperative_mode='sequential'
+        cooperative_mode=assignment_mode
     )
     
     # 初始化MA-TD3
@@ -467,12 +513,16 @@ def test_matd3_model(
 
                     if tgt is not None and tgt != world.WAIT_TARGET:
                         target_pos = np.array([world.Users[tgt].x, world.Users[tgt].y])
+                        track_key = tgt
+                    elif tgt == world.WAIT_TARGET or world.uav_reach_final[i]:
+                        target_pos = uav_pos.copy()
+                        track_key = 'wait'
                     else:
                         target_pos = np.array(world.end_loc)
+                        track_key = 'end'
 
                     dist_to_target = float(np.linalg.norm(target_pos - uav_pos))
                     heuristic = heuristic_action(uav_pos, target_pos, world.dist_max)
-                    track_key = tgt if (tgt is not None and tgt != world.WAIT_TARGET) else 'end'
                     same_target = prev_targets[i] == track_key
 
                     if same_target and prev_distances[i] is not None:
@@ -740,12 +790,18 @@ if __name__ == "__main__":
                        help='无人机数量')
     parser.add_argument('--test_episodes', type=int, default=10,
                        help='测试回合数')
+    parser.add_argument('--model_root', type=str, default='./results/models/MA-TD3',
+                       help='模型根目录')
+    parser.add_argument('--model_subdir', type=str, default='Ours',
+                       help='模型子目录；若留空则直接读取 UAV 目录')
     parser.add_argument('--T', type=int, default=2500,
                        help='单回合最大步数')
     parser.add_argument('--safe_distance', type=float, default=0.1,
                        help='安全距离，单位为100m')
     parser.add_argument('--comm_range', type=float, default=5.0,
                        help='通信范围，单位为100m')
+    parser.add_argument('--assignment_mode', type=str, default='sequence',
+                       help='任务分配模式: sequence / hybrid / dynamic')
     parser.add_argument('--pure_policy', action='store_true',
                        help='禁用测试时轨迹修正，使用纯策略动作')
     parser.add_argument('--trajectory_profile', type=str, default='smooth',
@@ -765,9 +821,12 @@ if __name__ == "__main__":
         model_episode=args.model_episode,
         uav_num=args.uav_num,
         test_episodes=args.test_episodes,
+        model_root=args.model_root,
+        model_subdir=args.model_subdir,
         T=args.T,
         safe_distance=args.safe_distance,
         comm_range=args.comm_range,
+        assignment_mode=args.assignment_mode,
         pure_policy=args.pure_policy,
         trajectory_profile=args.trajectory_profile,
         guidance_radius=args.guidance_radius,

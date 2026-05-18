@@ -63,3 +63,113 @@
 
 如果你希望我把上述改动整理为一个 Pull Request 或继续生成训练曲线图，请告诉我你更希望的下一步。 
 
+
+## Train_MulUAV.py 与 Test_MulUAV.py 参数说明
+
+本项目中，与距离、半径、通信范围、安全距离等相关的变量通常以“百米”为单位。例如，`safe_distance=0.1` 表示 10m，`comm_range=5.0` 表示 500m。
+
+### Train_MulUAV.py 参数
+
+| 参数 | 默认值 | 含义 |
+|---|---:|---|
+| `--uav_num` | `3` | 无人机数量。代码会根据它自动选择场景规模：2 架对应 20 个巡检点，3 架对应 30 个巡检点，4 架对应 40 个巡检点。 |
+| `--uav_h` | `1.0` | 无人机飞行高度。按项目单位理解，`1.0` 通常表示 100m。 |
+| `--gamma` | `0.99` | 强化学习折扣因子。越接近 1，越重视长期回报；越小，越重视当前奖励。 |
+| `--buffer` | `500000` | Replay Buffer 最大容量。越大，能保存更多历史经验，但占用内存更多。 |
+| `--net_width` | `256` | Actor 网络隐藏层宽度。Actor 负责输出每架无人机的动作。 |
+| `--critic_width` | `512` | Critic 网络隐藏层宽度。Critic 负责估计动作价值，通常可以比 Actor 更宽。 |
+| `--exploration_strategy` | `adaptive` | 探索噪声策略。目前主要使用 `adaptive`，会根据训练表现动态调整噪声。 |
+| `--min_exploration` | `0.05` | 最小探索噪声。防止训练后期完全没有探索。 |
+| `--max_exploration` | `0.25` | 最大探索噪声。训练初期或停滞时噪声不会超过这个值。 |
+| `--safe_distance` | `0.1` | 无人机之间的安全距离，单位为百米。`0.1` 即 10m。 |
+| `--comm_range` | `5.0` | 通信/感知范围，单位为百米。`5.0` 即 500m。 |
+| `--total_episode` | `3000` | 最大训练回合数。实际训练可能提前结束，例如达到 stable 成功率阈值。 |
+| `--T` | `2500` | 每个 episode 的最大步数。如果任务未完成但达到 `T`，该回合结束。 |
+| `--warmup` | `80` | 训练前用启发式策略跑多少个 episode 来填充 replay buffer。越大越容易冷启动成功，但训练前准备更久。 |
+| `--train_memory_size` | `4000` | Replay Buffer 至少积累多少条样本后才开始正式训练。 |
+| `--train_freq` | `2` | 每隔多少个环境 step 执行一次网络训练。`2` 表示每 2 步训练一次。 |
+| `--warmup_train_steps` | `1500` | warmup 数据收集完后，先额外训练多少次网络，相当于 bootstrap。 |
+| `--guided_action_prob_start` | `0.25` | 训练初期随机使用启发式动作的概率。`0.25` 表示初期约 25% 的概率借助启发式动作。 |
+| `--guided_action_decay_episodes` | `1000` | 启发式动作概率衰减到 0 所需 episode 数。越大，启发式辅助持续越久。 |
+| `--guidance_close_radius` | `3.0` | 目标附近启发式动作混合半径，单位为百米。主要帮助无人机最后阶段稳定进入目标阈值。 |
+| `--train_smooth_decay_episodes` | `1500` | 训练侧轨迹平滑修正持续多少 episode。超过后不再强制修正动作，让策略更自主。 |
+| `--train_guidance_radius` | `5.0` | 训练侧轨迹修正半径，单位为百米。在这个范围内更强地引导动作朝目标方向收敛。 |
+| `--train_near_target_radius` | `0.5` | 训练侧近目标强修正半径，单位为百米。`0.5` 即 50m，主要防止接近目标时绕圈或过冲。 |
+| `--train_max_turn_deg` | `16.0` | 训练侧单步最大转向角，单位为度。越小轨迹越平滑，但太小可能导致转弯不够灵活。 |
+| `--stable_window` | `100` | stable 成功率统计窗口。会统计最近 100 个 episode 的成功率。 |
+| `--stable_success_threshold` | `0.95` | 触发 stable 模型保存和提前结束的成功率阈值。`0.95` 表示最近窗口成功率达到 95% 即认为稳定。 |
+| `--model_root` | `./results/models/MA-TD3` | 模型保存根目录。 |
+| `--model_subdir` | `Ours` | 模型保存子目录。最终模型通常保存到 `model_root/UAV_x/model_subdir/`。 |
+
+训练参数调节建议：
+
+| 目标 | 主要调整参数 |
+|---|---|
+| 更容易学会完成任务 | `warmup`、`guided_action_prob_start`、`guided_action_decay_episodes`、`guidance_close_radius` |
+| 轨迹更平滑 | `train_smooth_decay_episodes`、`train_guidance_radius`、`train_max_turn_deg` |
+| 训练更快开始 | 降低 `warmup`、`train_memory_size`、`warmup_train_steps` |
+| 保守稳定 | 增大 `stable_window`，维持或提高 `stable_success_threshold` |
+| 保存到不同目录 | 修改 `model_root` 和 `model_subdir` |
+
+训练示例：
+
+```powershell
+python Train_MulUAV.py --uav_num 4 --model_subdir Ours
+```
+
+### Test_MulUAV.py 参数
+
+测试脚本中的命令行参数会传入 `test_matd3_model(...)`。
+
+| 参数 | 默认值 | 含义 |
+|---|---:|---|
+| `--model_episode` | `auto` | 要加载的模型版本。可选 `auto`、`stable`、`best`、`final` 或具体 episode 数字。`auto` 会优先找 `stable`，再找 `best`，最后找 `final`。 |
+| `--uav_num` | `3` | 测试无人机数量。必须和训练模型对应，否则 Actor 数量和场景可能不匹配。 |
+| `--test_episodes` | `10` | 测试回合数。越大统计越稳定，但耗时越长。 |
+| `--model_root` | `./results/models/MA-TD3` | 模型根目录。 |
+| `--model_subdir` | `Ours` | 模型子目录。测试会优先读取 `model_root/UAV_x/model_subdir/`。如果子目录没有模型但旧目录有模型，会回退到 `model_root/UAV_x/`。 |
+| `--T` | `2500` | 单个测试 episode 的最大步数。 |
+| `--safe_distance` | `0.1` | 测试环境中的安全距离，单位为百米。建议和训练保持一致。 |
+| `--comm_range` | `5.0` | 测试环境中的通信/感知范围，单位为百米。建议和训练保持一致。 |
+| `--pure_policy` | 默认关闭 | 是否禁用测试时轨迹修正。加上该 flag 后，测试只使用模型原始动作，不做几何平滑后处理。 |
+| `--trajectory_profile` | `smooth` | 测试侧轨迹后处理档位。当前支持 `smooth`、`balanced`、`agile`。 |
+| `--guidance_radius` | `None` | 手动覆盖轨迹修正半径，单位为百米。如果不传，则使用 `trajectory_profile` 对应默认值。 |
+| `--near_target_radius` | `None` | 手动覆盖近目标强修正半径，单位为百米。如果不传，则使用档位默认值。 |
+| `--max_turn_deg` | `None` | 手动覆盖单步最大转向角，单位为度。如果不传，则使用档位默认值。 |
+
+`trajectory_profile` 档位说明：
+
+| 档位 | 含义 |
+|---|---|
+| `smooth` | 最平滑，默认推荐。更像真实飞行，倾向直线段和大曲率半径转弯。 |
+| `balanced` | 平滑和灵活性折中。 |
+| `agile` | 更灵活，允许更快转向，但轨迹可能更不平滑。 |
+
+常用测试命令：
+
+```powershell
+python Test_MulUAV.py --uav_num 3 --model_episode stable --trajectory_profile smooth
+```
+
+如果想观察模型原始策略，而不使用测试脚本的轨迹修正：
+
+```powershell
+python Test_MulUAV.py --uav_num 3 --model_episode stable --pure_policy
+```
+
+如果轨迹仍然不够平滑，可以进一步限制转向角：
+
+```powershell
+python Test_MulUAV.py --uav_num 3 --model_episode stable --trajectory_profile smooth --max_turn_deg 12
+```
+
+### 容易混淆的参数
+
+| 参数 | 说明 |
+|---|---|
+| `model_episode` | 控制加载哪一版权重，例如 `stable`、`best`、`final`。 |
+| `model_subdir` | 控制去哪一个目录找权重，例如 `Ours`、`PSO`、`GA`。 |
+| `train_guidance_radius` | 训练时动作平滑/引导半径。 |
+| `guidance_radius` | 测试时动作平滑/引导半径。 |
+| `pure_policy` | 只影响测试，不影响训练。开启后更能反映模型原始策略，但也更容易出现波浪线或绕弯。 |
+| `safe_distance`、`comm_range`、各种 `radius` | 都按百米单位理解，不是米。 |

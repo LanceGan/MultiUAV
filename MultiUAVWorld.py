@@ -170,9 +170,14 @@ class MultiUAVWorld(object):
            
     """为每个无人机分配第一个飞行目标点,需要提前指定巡检序列self.uav_traverse"""
     def assign_targets(self):
+        self.target_owner = {}
+        self.assigned_time = {}
         for i in range(self.uav_num):
             if len(self.uav_traverse[i]) > 0:
-                self.uav_targets[i] = self.uav_traverse[i][0]
+                target_idx = self.uav_traverse[i][0]
+                self.uav_targets[i] = target_idx
+                self.target_owner[target_idx] = i
+                self.assigned_time[target_idx] = self.t
             else:
                 self.uav_targets[i] = None
                 
@@ -201,9 +206,11 @@ class MultiUAVWorld(object):
         self.current_action_targets = [None for _ in range(self.uav_num)]
         self.uav_reach_final = [False for _ in range(self.uav_num)] #重置每个无人机到达终点标志
         
-        # 重置巡检序列
-        # self.assign_initial_targets() # 注释掉：不需要动态就近分配了
-        self.assign_targets()           # 🔥 启用：为每个无人机分配巡检序列中的第一个点
+        # 重置巡检序列/任务分配
+        if self.sequence_path is None:
+            self.assign_initial_targets()
+        else:
+            self.assign_targets()
         # 重置完成
         
         
@@ -335,8 +342,9 @@ class MultiUAVWorld(object):
         # 当前位置
         uav_locations = np.array([[uav.x, uav.y] for uav in self.UAVs])
         
-        # 回收超时的分配，避免死占用，只有动态贪心情况才使用
-        # self._reclaim_stale_assignments()
+        # 只有允许协同重分配时，才回收超时分配
+        if self.cooperative_mode in ('dynamic', 'hybrid'):
+            self._reclaim_stale_assignments()
 
         # 更新数据传输
         # self._update_data_transmission(uav_locations)
@@ -599,6 +607,94 @@ class MultiUAVWorld(object):
         for uid in range(self.uav_num):
             if self.uav_targets[uid] == self.WAIT_TARGET:
                 self._assign_next_target(uid)
+
+    def _assign_nearest_available_target(self, uav_id):
+        occupied = {
+            tgt for tgt, owner in self.target_owner.items()
+            if owner != uav_id and tgt not in self.completed_targets
+        }
+        remaining_targets = [
+            idx for idx in range(self.user_num)
+            if idx not in self.completed_targets and idx not in occupied
+        ]
+
+        if remaining_targets:
+            uav_pos = np.array([self.UAVs[uav_id].x, self.UAVs[uav_id].y])
+            min_dist = float('inf')
+            next_target = None
+
+            for target_idx in remaining_targets:
+                target_pos = np.array([self.Users[target_idx].x, self.Users[target_idx].y])
+                dist = LA.norm(uav_pos - target_pos)
+                if dist < min_dist:
+                    min_dist = dist
+                    next_target = target_idx
+
+            if next_target is not None:
+                self.target_owner[next_target] = uav_id
+                self.assigned_time[next_target] = self.t
+                self.uav_targets[uav_id] = next_target
+                self.uav_reach_final[uav_id] = False
+                return next_target
+
+        if len(self.completed_targets) < self.user_num:
+            self.uav_targets[uav_id] = self.WAIT_TARGET
+            self.uav_reach_final[uav_id] = False
+        else:
+            self.uav_targets[uav_id] = None
+            self.uav_reach_final[uav_id] = True
+
+        return self.uav_targets[uav_id]
+
+    def _assign_next_target(self, uav_id):
+        if self.uav_reach_final[uav_id]:
+            return None
+
+        if self.sequence_path is None:
+            return self._assign_nearest_available_target(uav_id)
+
+        remaining_targets = [
+            tgt for tgt in self.uav_traverse[uav_id]
+            if tgt not in self.completed_targets
+        ]
+
+        if remaining_targets:
+            next_target = remaining_targets[0]
+            owner = self.target_owner.get(next_target)
+            if owner is None or owner == uav_id:
+                self.uav_targets[uav_id] = next_target
+                self.target_owner[next_target] = uav_id
+                self.assigned_time[next_target] = self.t
+            else:
+                self.uav_targets[uav_id] = self.WAIT_TARGET
+            self.uav_reach_final[uav_id] = False
+            return self.uav_targets[uav_id]
+
+        if self.cooperative_mode == 'hybrid':
+            return self._assign_nearest_available_target(uav_id)
+
+        self.uav_targets[uav_id] = None
+        self.uav_reach_final[uav_id] = True
+        return None
+
+    def _on_reach_target(self, uav_id, target_idx):
+        if target_idx is None:
+            return
+
+        self.completed_targets.add(target_idx)
+
+        if target_idx in self.target_owner:
+            try:
+                del self.target_owner[target_idx]
+            except KeyError:
+                pass
+        if target_idx in self.assigned_time:
+            try:
+                del self.assigned_time[target_idx]
+            except KeyError:
+                pass
+
+        self._assign_next_target(uav_id)
 
 
     def _compute_rewards(self, uav_locations, uav_locations_pre):
