@@ -308,6 +308,8 @@ def test_matd3_model(
     guidance_radius=None,
     near_target_radius=None,
     max_turn_deg=None,
+    drop_targets_per_uav=0,
+    random_layout=False,
 ):
     """
     测试MA-TD3模型
@@ -350,6 +352,11 @@ def test_matd3_model(
     assignment_mode = str(assignment_mode).strip().lower()
     if assignment_mode not in ('sequence', 'hybrid', 'dynamic'):
         raise ValueError(f"不支持的 assignment_mode: {assignment_mode}")
+
+    # 随机布局下固定序列无意义，自动切换为动态分配
+    if random_layout and assignment_mode != 'dynamic':
+        print(f"[提示] random_layout=True 时固定序列无意义，自动切换 assignment_mode: {assignment_mode} -> dynamic")
+        assignment_mode = 'dynamic'
 
     if uav_num == 2:
         user_num = 20
@@ -402,8 +409,10 @@ def test_matd3_model(
     print(f"轨迹修正半径: {guidance_radius}")
     print(f"近目标半径: {near_target_radius}")
     print(f"最大转向角: {max_turn_deg}")
+    print(f"每UAV丢弃目标数: {drop_targets_per_uav}")
+    print(f"随机布局: {random_layout}")
     print("="*80 + "\n")
-    
+
     # 创建多无人机环境
     world = MultiUAVWorld(
         length=Length, 
@@ -422,7 +431,9 @@ def test_matd3_model(
         sequence_path=sequence_path,  # 🔥 确保传入序列路径
         safe_distance=safe_distance,
         comm_range=comm_range,
-        cooperative_mode=assignment_mode
+        cooperative_mode=assignment_mode,
+        drop_targets_per_uav=drop_targets_per_uav,
+        random_layout=random_layout
     )
     
     # 初始化MA-TD3
@@ -461,26 +472,27 @@ def test_matd3_model(
     y_uav_all = np.zeros([test_episodes, uav_num, T+1])
     z_uav_all = np.zeros([test_episodes, uav_num, T+1])
     
-    # 用户位置
-    x_user = np.zeros(world.user_num)
-    y_user = np.zeros(world.user_num)
-    z_user = np.zeros(world.user_num)
-    
-    for i, user in enumerate(world.Users):
-        x_user[i] = user.x
-        y_user[i] = user.y
-        z_user[i] = user.z if hasattr(user, 'z') else 0
-    
     # 测试循环
     print("开始测试...\n")
-    
+
     for episode in range(test_episodes):
         print(f"{'='*80}")
         print(f"测试回合 {episode+1}/{test_episodes}")
         print(f"{'='*80}")
-        
+
         # 重置环境
         obs_list = world.reset()
+
+        # 读取当前用户位置（random_layout 时每轮不同）
+        x_user = np.zeros(world.user_num)
+        y_user = np.zeros(world.user_num)
+        z_user = np.zeros(world.user_num)
+        for i, user in enumerate(world.Users):
+            x_user[i] = user.x
+            y_user[i] = user.y
+            z_user[i] = user.z if hasattr(user, 'z') else 0
+        if world.drop_targets_per_uav > 0:
+            print(f"  丢弃目标: {world.dropped_targets_log}")
         prev_actions = [None for _ in range(uav_num)]
         prev_targets = [None for _ in range(uav_num)]
         prev_distances = [None for _ in range(uav_num)]
@@ -590,7 +602,9 @@ def test_matd3_model(
         for i in range(uav_num):
             completed = len([t for t in world.uav_traverse[i] if t in world.completed_targets])
             total = len(world.uav_traverse[i])
-            print(f"  UAV {i}: {completed}/{total} 目标点")
+            original_total = len(world.original_uav_traverse[i])
+            suffix = f" (原始: {original_total})" if world.drop_targets_per_uav > 0 else ""
+            print(f"  UAV {i}: {completed}/{total} 目标点{suffix}")
         print()
 
         path_stats = compute_path_stats(
@@ -623,7 +637,9 @@ def test_matd3_model(
             success=info.get('success', False),
             completed_targets=info['completed_targets'],
             uav_traverse=[world.uav_traverse[i] for i in range(uav_num)],
-            completed_set=list(world.completed_targets)
+            completed_set=list(world.completed_targets),
+            dropped_targets=str(world.dropped_targets_log) if world.drop_targets_per_uav > 0 else '',
+            random_layout=world.random_layout
         )
         print(f"✓ 轨迹数据已保存: {trajectory_file}")
         
@@ -648,8 +664,10 @@ def test_matd3_model(
     print(f"平均完成目标: {np.mean(Completed_targets):.1f}/{user_num}")
     print(f"最佳完成: {int(np.max(Completed_targets))}/{user_num}")
     print(f"最差完成: {int(np.min(Completed_targets))}/{user_num}")
+    if drop_targets_per_uav > 0:
+        print(f"每UAV丢弃目标数: {drop_targets_per_uav}")
     print("="*80)
-    
+
    # 绘制统计图表，保存到当前 UAV 的 result 目录下
     plot_test_statistics(
         Complete_time, Total_rewards, Completed_targets,
@@ -813,7 +831,11 @@ if __name__ == "__main__":
                        help='手动覆盖近目标强修正半径，单位为100m')
     parser.add_argument('--max_turn_deg', type=float, default=None,
                        help='手动覆盖单步最大转向角，单位为度')
-    
+    parser.add_argument('--drop_targets', type=int, default=0,
+                       help='每个无人机随机丢弃的目标点数量 (鲁棒性测试，0=不丢弃)')
+    parser.add_argument('--random_layout', action='store_true',
+                       help='随机化巡检点空间分布 (鲁棒性测试)')
+
     args = parser.parse_args()
     
     # 运行测试
@@ -832,6 +854,8 @@ if __name__ == "__main__":
         guidance_radius=args.guidance_radius,
         near_target_radius=args.near_target_radius,
         max_turn_deg=args.max_turn_deg,
+        drop_targets_per_uav=args.drop_targets,
+        random_layout=args.random_layout,
     )
     
     print("\n" + "="*80)

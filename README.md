@@ -136,6 +136,8 @@ python Train_MulUAV.py --uav_num 4 --model_subdir Ours
 | `--guidance_radius` | `None` | 手动覆盖轨迹修正半径，单位为百米。如果不传，则使用 `trajectory_profile` 对应默认值。 |
 | `--near_target_radius` | `None` | 手动覆盖近目标强修正半径，单位为百米。如果不传，则使用档位默认值。 |
 | `--max_turn_deg` | `None` | 手动覆盖单步最大转向角，单位为度。如果不传，则使用档位默认值。 |
+| `--drop_targets` | `0` | 鲁棒性测试：每架无人机每轮随机丢弃的目标点数量。`0` 表示不丢弃。每轮 `reset()` 时独立随机采样。 |
+| `--random_layout` | 默认关闭 | 鲁棒性测试：随机化巡检点空间分布。加上该 flag 后，每轮 `reset()` 时所有巡检点坐标在环境范围内重新随机生成，且自动切换为 `dynamic` 分配模式。 |
 
 `trajectory_profile` 档位说明：
 
@@ -161,6 +163,34 @@ python Test_MulUAV.py --uav_num 3 --model_episode stable --pure_policy
 
 ```powershell
 python Test_MulUAV.py --uav_num 3 --model_episode stable --trajectory_profile smooth --max_turn_deg 12
+```
+
+### 鲁棒性测试
+
+本项目支持两种鲁棒性测试模式，用于评估模型在非理想条件下的泛化能力：
+
+**模式一：固定序列 + 随机丢弃目标点**
+
+保持 PSO 优化的巡检序列不变，每轮随机从每架无人机的序列中去掉指定数量的目标点，测试 UAV 是否仍能完成剩余巡检任务。
+
+```powershell
+# 每架UAV每轮随机丢弃2个目标点
+python Test_MulUAV.py --uav_num 2 --model_subdir PSO --test_episodes 10 --drop_targets 2
+```
+
+**模式二：随机分布 + 动态分配**
+
+保持巡检点总数不变，但每轮将所有巡检点坐标在环境范围内重新随机生成（不再是聚类分布），并自动切换为动态分配模式（UAV 自主选择最近目标）。
+
+```powershell
+# 随机分布巡检点，动态分配
+python Test_MulUAV.py --uav_num 2 --model_subdir PSO --test_episodes 10 --random_layout
+```
+
+两种模式也可以组合使用：
+
+```powershell
+python Test_MulUAV.py --uav_num 2 --model_subdir PSO --test_episodes 10 --random_layout --drop_targets 2
 ```
 
 ### 容易混淆的参数

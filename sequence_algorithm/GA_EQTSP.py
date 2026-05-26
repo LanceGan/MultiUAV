@@ -360,29 +360,21 @@ def read_clustered_data(coords_path, cluster_path):
 
 
 if __name__ == "__main__":
-    User_num = 20
-    Cluster_num = 2
+    User_num = 40
+    Cluster_num = 4
     
     # 文件路径
-    coords_file = '../results/datas/Users_%d.txt' % User_num
+    coords_file = 'results/datas/Users_%d.txt' % User_num
     # cluster_file = 'results/datas/cluster/Users_%d_ClusteredUAV_%d.txt' % (User_num, Cluster_num)
-    cluster_file = '../results/datas/cluster/Users_%d_Clustered_comm_4DUAV_%d.txt' % (User_num, Cluster_num)
+    cluster_file = 'results/datas/cluster/Users_%d_Clustered_comm_4DUAV_%d.txt' % (User_num, Cluster_num)
 
-    save_path = '../results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (User_num, Cluster_num)
+    save_path = 'results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (User_num, Cluster_num)
     
      # 起点和终点坐标设定 (扩展为3维以匹配数据)
-    if Cluster_num == 2:
-        #uav = 2
-        ini_loc = np.array([14.76, 14.83, 0.0])
-        end_loc = np.array([27.62, 23.47, 0.0])
-    elif Cluster_num == 3:
-        #uav = 3
-        ini_loc = np.array([32.88, 22.67, 0.0])
-        end_loc = np.array([21.62, 48.47, 0.0])
-    elif Cluster_num == 4:
-        #uav = 4
-        ini_loc = np.array([34.12, 28.79, 0.0])
-        end_loc = np.array([38.46, 45.23, 0.0])
+   
+    ini_loc = np.array([14.76, 14.83, 0.0])
+    end_loc = np.array([27.62, 23.47, 0.0])
+    
 
    # 1. 额外读取真实的聚类标签，提取全局索引
     cluster_labels = []

@@ -179,15 +179,15 @@ def kmeans_4d(points: np.ndarray,
     return labels, spatial_centers, inertia
 
 if __name__ == '__main__':
-    Users_num = 40
+    Users_num = 20
     pts = np.loadtxt('results/datas/Users_%d.txt' % Users_num)
     
     # 假设有一些随机的数据包大小（单位: MB 或 bit）
     np.random.seed(42)
     offloads = np.random.uniform(10, 100, size=Users_num) 
     
-    UAV_num = 4
-    mode = ('origin','comm_4D')[0]
+    UAV_num = 2
+    mode = ('origin','comm_4D')[1]
     random_seed = int(np.random.uniform(0,100))
     
     if mode == 'origin':

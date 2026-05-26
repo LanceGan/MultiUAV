@@ -30,8 +30,10 @@ class MultiUAVWorld(object):
                  BS_loc=[],
                  sequence_path=None, 
                  safe_distance=0.1,  # 🔥 安全距离 10m
-                 comm_range=5.0,     
-                 cooperative_mode='sequential'): 
+                 comm_range=5.0,
+                 cooperative_mode='sequential',
+                 drop_targets_per_uav=0,
+                 random_layout=False): 
         
         # 基础参数
         self.length = length
@@ -83,7 +85,15 @@ class MultiUAVWorld(object):
         # 加载基站位置
         self.BS_loc = BS_loc
         self.set_users()
-        
+
+        # 鲁棒性测试：随机化巡检点空间分布（保持序列索引不变）
+        self.random_layout = random_layout
+        if self.random_layout:
+            for user in self.Users:
+                user.x = np.random.uniform(0, self.length)
+                user.y = np.random.uniform(0, self.width)
+            print(f"已随机化 {len(self.Users)} 个巡检点位置 (范围: [0,{self.length}] x [0,{self.width}])")
+
         # 环境地图
         self.urban_world = Rural_world(self.BS_loc)
         self.HeightMapMatrix = self.urban_world.Buliding_construct()
@@ -100,8 +110,12 @@ class MultiUAVWorld(object):
         else:
             print("未找到序列文件，使用空序列")
             self.uav_traverse = {i: [] for i in range(self.uav_num)}
-        
-        
+
+        # 鲁棒性测试：保存原始序列副本，支持每回合随机丢弃目标点
+        self.original_uav_traverse = {i: list(seq) for i, seq in self.uav_traverse.items()}
+        self.drop_targets_per_uav = drop_targets_per_uav
+        self.dropped_targets_log = {}
+
         # self.uav_data_sizes = [0.0] * uav_num  # 每个无人机的数据传输进度
         # self.uav_transmit_flags = [False] * uav_num  # 传输完成标志
         self.completed_targets = set()  # 已完成的目标点
@@ -194,7 +208,13 @@ class MultiUAVWorld(object):
     def reset(self):
         """重置环境"""
         self.set_uavs_loc() #重置无人机位置
-        
+
+        # 鲁棒性测试：每回合重新随机化巡检点位置
+        if self.random_layout:
+            for user in self.Users:
+                user.x = np.random.uniform(0, self.length)
+                user.y = np.random.uniform(0, self.width)
+
         # 重置分配/完成状态（先清空再分配）
         self.completed_targets = set() #重置已完成目标集
         self.target_owner = {}
@@ -205,7 +225,11 @@ class MultiUAVWorld(object):
         self.current_actions = [None for _ in range(self.uav_num)]
         self.current_action_targets = [None for _ in range(self.uav_num)]
         self.uav_reach_final = [False for _ in range(self.uav_num)] #重置每个无人机到达终点标志
-        
+
+        # 鲁棒性测试：每回合随机丢弃目标点
+        if self.sequence_path is not None and self.drop_targets_per_uav > 0:
+            self._apply_target_drops()
+
         # 重置巡检序列/任务分配
         if self.sequence_path is None:
             self.assign_initial_targets()
@@ -696,6 +720,23 @@ class MultiUAVWorld(object):
 
         self._assign_next_target(uav_id)
 
+    def _apply_target_drops(self):
+        """随机丢弃每架无人机巡检序列中的 drop_targets_per_uav 个目标点。
+        每回合开始时在 reset() 中调用，用于鲁棒性测试。
+        """
+        self.dropped_targets_log = {}
+        for i in range(self.uav_num):
+            original_seq = list(self.original_uav_traverse[i])
+            n_drop = min(self.drop_targets_per_uav, len(original_seq))
+            if n_drop > 0:
+                drop_indices = set(np.random.choice(len(original_seq), n_drop, replace=False))
+                dropped = [original_seq[j] for j in drop_indices]
+                keep = [original_seq[j] for j in range(len(original_seq)) if j not in drop_indices]
+                self.uav_traverse[i] = keep
+                self.dropped_targets_log[i] = dropped
+            else:
+                self.uav_traverse[i] = list(original_seq)
+                self.dropped_targets_log[i] = []
 
     def _compute_rewards(self, uav_locations, uav_locations_pre):
         """计算每个无人机的奖励。

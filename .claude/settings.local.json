@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import numpy as np; d = np.load\\('results/datas/sequence/Users_20_Clusteredsave_path_PathUAV_PSO_2.npz', allow_pickle=True\\); print\\('Keys:', list\\(d.keys\\(\\)\\)\\); print\\('Type of result:', type\\(d['result'].item\\(\\)\\)\\); traverse = d['result'].item\\(\\); print\\('Traverse:', traverse\\); print\\('UAV 0 targets:', len\\(traverse[0]\\), traverse[0]\\); print\\('UAV 1 targets:', len\\(traverse[1]\\), traverse[1]\\)\")"
+    ]
+  }
+}

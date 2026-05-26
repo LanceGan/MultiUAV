@@ -302,7 +302,7 @@ def main():
         Width = 40
         # sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
         if assignment_mode in ("sequence", "hybrid"):
-            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
+            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
         ini_loc = [14.76, 14.83]
         end_loc = [27.62, 23.47]
         BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
@@ -314,7 +314,7 @@ def main():
         Width = 40
         # sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
         if assignment_mode in ("sequence", "hybrid"):
-            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
+            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
         ini_loc = [14.76, 14.83]
         end_loc = [27.62, 23.47]
         BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
@@ -330,7 +330,7 @@ def main():
         Width = 40
         # sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
         if assignment_mode in ("sequence", "hybrid"):
-            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
+            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
         ini_loc = [14.76, 14.83]
         end_loc = [27.62, 23.47]
         BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
