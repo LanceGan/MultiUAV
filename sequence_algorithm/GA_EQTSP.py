@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import radio_map_G2A as rad_env
+import radio_map_G2A as rad_env_g2a
 from numpy import linalg as LA
 
 
@@ -35,8 +36,11 @@ class GA(object):
         # 移除了能耗矩阵的计算
         self.throught_mat = self.comput_thought(num_city, self.location) # 吞吐量矩阵
         
-        # 计算综合权重时，不再传入并计算能耗，仅基于数据量和吞吐量
-        self.weight_mec_mat = self.compute_weight_mec(num_city, self.Data_size, self.throught_mat)
+        # 计算 G2A 中断概率矩阵
+        self.g2a_outage_mat = self.compute_g2a_outage_matrix(num_city, data)
+
+        # 计算综合权重时，同时考虑 A2G 传输成本和 G2A 中断惩罚
+        self.weight_mec_mat = self.compute_weight_mec(num_city, self.Data_size, self.throught_mat, self.g2a_outage_mat)
         
         self.dis_mat = self.compute_dis_mat(num_city, data)  # 综合考虑了权重的最终距离矩阵
 
@@ -129,16 +133,20 @@ class GA(object):
                 dis_mat_ini[i][j] = tmp
         return dis_mat_ini
 
-    def compute_weight_mec(self, num_city, Data_size, Throught):
-        """去除能耗后的权重矩阵：直接由数据量和吞吐量决定"""
+    def compute_weight_mec(self, num_city, Data_size, Throught, G2A_outage,
+                           g2a_threshold=0.3, g2a_penalty=1e6):
+        """综合权重矩阵：A2G 传输成本 + G2A 中断惩罚"""
         matrix_weight = np.zeros([num_city, num_city])
         for i in range(num_city):
             for j in range(num_city):
                 if i == j or Throught[i][j] == 0:
                     matrix_weight[i][j] = np.inf
                     continue
-                # 仅考虑传输成本 (时间)，不乘能耗
-                matrix_weight[i][j] = Data_size / Throught[i][j]
+                # A2G 传输成本
+                a2g_cost = Data_size / Throught[i][j]
+                # G2A 中断惩罚：超出阈值时施加额外代价
+                g2a_pen = g2a_penalty * max(0, G2A_outage[i][j] - g2a_threshold)
+                matrix_weight[i][j] = a2g_cost + g2a_pen
         return matrix_weight
 
     def comput_thought(self, num_city, location):
@@ -190,8 +198,60 @@ class GA(object):
         loc_km = np.zeros(shape=(1, 3))
         loc_km[0, :2] = location / 10
         loc_km[0, 2] = 0.1
-        dateRate = rad_env.getPointDateRate(loc_km) 
+        dateRate = rad_env.getPointDateRate(loc_km)
         return dateRate
+
+    def get_g2a_outage(self, location):
+        """Get G2A outage probability at a location."""
+        loc_km = np.zeros(shape=(1, 3))
+        loc_km[0, :2] = location / 10
+        loc_km[0, 2] = 0.1
+        outage = rad_env_g2a.getPointMiniOutage(loc_km)
+        return float(outage[0])
+
+    def compute_g2a_outage_matrix(self, num_city, location):
+        """Compute average G2A outage probability along straight-line paths between all city pairs."""
+        distance = 0.0915
+        DIST_TOLERANCE = 0.200
+        next_loc = np.zeros(2)
+        g2a_mat = np.zeros((num_city, num_city))
+
+        for i in range(num_city):
+            for j in range(num_city):
+                if i == j:
+                    g2a_mat[i][j] = 0.0
+                    continue
+
+                Phi = np.arctan((location[j][1] - location[i][1]) / (location[j][0] - location[i][0] + 1e-9))
+                Phi_deg = np.rad2deg(Phi)
+
+                if (location[j][1] >= location[i][1]) & (location[j][0] < location[i][0]):
+                    Phi_deg = 180 + Phi_deg
+                elif (location[j][1] < location[i][1]) & (location[j][0] < location[i][0]):
+                    Phi_deg = Phi_deg - 180
+
+                drec = np.deg2rad(Phi_deg)
+                currect_loc = location[i][0:2]
+                outage_sum = 0.0
+                sample_count = 0
+
+                max_steps = 1000
+                step = 0
+
+                while step < max_steps:
+                    next_loc[0] = currect_loc[0] + np.cos(drec) * distance
+                    next_loc[1] = currect_loc[1] + np.sin(drec) * distance
+                    outage_sum += self.get_g2a_outage(next_loc)
+                    sample_count += 1
+
+                    if LA.norm(next_loc - location[j][0:2]) <= DIST_TOLERANCE:
+                        break
+                    else:
+                        currect_loc = next_loc
+                    step += 1
+
+                g2a_mat[i][j] = outage_sum / max(sample_count, 1)
+        return g2a_mat
 
     def compute_pathlen(self, path, dis_mat):
         result = 0.0
