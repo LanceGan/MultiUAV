@@ -4,6 +4,7 @@ Usage:
     python run_paper_experiments.py --experiment all
     python run_paper_experiments.py --experiment clustering
     python run_paper_experiments.py --experiment routing
+    python run_paper_experiments.py --experiment multi_data
 """
 import sys
 import os
@@ -19,7 +20,7 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from scenario_config import UAV_USER_MAP, INI_LOC, END_LOC
-from baselines import balanced_naive_kmeans
+from baselines import balanced_naive_kmeans, run_ga_eqtsp
 from Clustering import kmeans_4d
 
 
@@ -269,12 +270,76 @@ def run_routing_experiment():
 
 
 # ---------------------------------------------------------------------------
+#  Experiment 3: Multi-Data-Volume
+# ---------------------------------------------------------------------------
+
+def run_multi_data_volume_experiment():
+    """Run GA_EQTSP across different data volumes with N=3 UAVs and 4D clustering."""
+    print("=" * 60)
+    print("  MULTI-DATA-VOLUME EXPERIMENT")
+    print("=" * 60)
+
+    out_dir = os.path.join(_project_root, "results", "paper_experiments", "multi_data")
+    ensure_dir(out_dir)
+
+    n_uav = 3
+    n_users = UAV_USER_MAP[n_uav]
+    data_sizes = [100, 200, 300]
+
+    points = load_points(n_users)
+    labels = load_cluster_labels(n_users, n_uav, method="4d")
+    clusters = split_clusters(points, labels)
+    ini_loc, end_loc = get_ini_end_3d()
+
+    results = {"n_uav": n_uav, "n_users": n_users, "data_sizes": {}}
+
+    for ds in data_sizes:
+        print(f"\n--- Data size = {ds} MB ---")
+        ds_results = {}
+        total_length = 0.0
+        total_time = 0.0
+
+        for cid in sorted(clusters.keys()):
+            cpts = clusters[cid]
+            print(f"  Cluster {cid} ({cpts.shape[0]} points) ... ", end="", flush=True)
+            t0 = time.time()
+            best_coords, best_length, best_indices = run_ga_eqtsp(
+                cpts, ini_loc, end_loc, num_total=25, iteration=200, data_size=ds,
+            )
+            elapsed = time.time() - t0
+            total_length += best_length
+            total_time += elapsed
+            ds_results[f"cluster_{cid}"] = {
+                "path_length": round(float(best_length), 6),
+                "time_s": round(elapsed, 2),
+                "best_indices": [int(i) for i in best_indices],
+            }
+            print(f"length={best_length:.4f}  time={elapsed:.1f}s")
+
+        ds_results["total_path_length"] = round(total_length, 6)
+        ds_results["total_time_s"] = round(total_time, 2)
+        results["data_sizes"][str(ds)] = ds_results
+
+        # Save per-data-size results
+        ds_path = os.path.join(out_dir, f"ga_eqtsp_data{ds}_uav{n_uav}.json")
+        with open(ds_path, "w", encoding="utf-8") as f:
+            json.dump(ds_results, f, indent=2, ensure_ascii=False)
+
+    # Save summary
+    summary_path = os.path.join(out_dir, "multi_data_summary.json")
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+    print(f"\nMulti-data-volume results saved to {summary_path}")
+
+
+# ---------------------------------------------------------------------------
 #  Main
 # ---------------------------------------------------------------------------
 
 EXPERIMENT_MAP = {
     "clustering": run_clustering_experiment,
     "routing": run_routing_experiment,
+    "multi_data": run_multi_data_volume_experiment,
 }
 
 
