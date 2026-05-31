@@ -541,7 +541,7 @@ def generate_weight_evolution_figure():
 def generate_sensitivity_figure():
     """Dual-axis plots for GA population and data volume sensitivity.
 
-    Loads sensitivity data from ``results/paper_experiments/sensitivity/``
+    Loads sensitivity data from ``results/sensitivity/``
     and produces two separate figures:
 
     * ``ga_population_sensitivity.png`` -- path length and runtime vs
@@ -554,18 +554,20 @@ def generate_sensitivity_figure():
     break.
     """
     _ensure_save_dir()
-    sensitivity_dir = os.path.join(EXPERIMENT_DIR, 'sensitivity')
+    sensitivity_dir = os.path.join(SCRIPT_DIR, 'results', 'sensitivity')
 
     # ------------------------------------------------------------------
     # Figure (a): GA population size sensitivity
     # ------------------------------------------------------------------
-    pop_json = os.path.join(sensitivity_dir, 'ga_population_sensitivity.json')
+    pop_json = os.path.join(sensitivity_dir, 'ga_population', 'ga_population_sensitivity.json')
     if os.path.isfile(pop_json):
         with open(pop_json) as f:
             pop_data = json.load(f)
-        pop_sizes = np.array(pop_data['pop_sizes'], dtype=float)
-        path_lengths = np.array(pop_data['path_lengths'], dtype=float)
-        runtimes = np.array(pop_data['runtimes'], dtype=float)
+        pop_data_dict = pop_data['population_sizes']
+        pop_keys = sorted(pop_data_dict.keys(), key=int)
+        pop_sizes = np.array([int(k) for k in pop_keys], dtype=float)
+        path_lengths = np.array([pop_data_dict[k]['total_path_length'] for k in pop_keys], dtype=float)
+        runtimes = np.array([pop_data_dict[k]['total_time_s'] for k in pop_keys], dtype=float)
     else:
         print(f'[WARN] {pop_json} not found, generating synthetic data.')
         pop_sizes = np.array([20, 50, 100, 150, 200, 300])
@@ -600,13 +602,15 @@ def generate_sensitivity_figure():
     # ------------------------------------------------------------------
     # Figure (b): Data volume sensitivity
     # ------------------------------------------------------------------
-    vol_json = os.path.join(sensitivity_dir, 'data_volume_sensitivity.json')
+    vol_json = os.path.join(sensitivity_dir, 'data_volume', 'data_volume_sensitivity.json')
     if os.path.isfile(vol_json):
         with open(vol_json) as f:
             vol_data = json.load(f)
-        data_sizes = np.array(vol_data['data_sizes'], dtype=float)
-        path_lengths_v = np.array(vol_data['path_lengths'], dtype=float)
-        runtimes_v = np.array(vol_data['runtimes'], dtype=float)
+        vol_data_dict = vol_data['data_sizes']
+        vol_keys = sorted(vol_data_dict.keys(), key=int)
+        data_sizes = np.array([int(k) for k in vol_keys], dtype=float)
+        path_lengths_v = np.array([vol_data_dict[k]['total_path_length'] for k in vol_keys], dtype=float)
+        runtimes_v = np.array([vol_data_dict[k]['total_time_s'] for k in vol_keys], dtype=float)
     else:
         print(f'[WARN] {vol_json} not found, generating synthetic data.')
         data_sizes = np.array([1, 2, 5, 8, 10, 15, 20])
