@@ -5,11 +5,7 @@ from numpy import linalg as LA
 from rural_world import Rural_world
 import radio_map_A2G as A2G
 import radio_map_G2A as G2A
-
-
-def wrap_angle(angle):
-    """将角度归一化到 [-pi, pi]。"""
-    return (angle + np.pi) % (2 * np.pi) - np.pi
+from utils import wrap_angle
 
 class MultiUAVWorld(object):
     """多无人机协同巡检环境"""
@@ -33,7 +29,9 @@ class MultiUAVWorld(object):
                  comm_range=5.0,
                  cooperative_mode='sequential',
                  drop_targets_per_uav=0,
-                 random_layout=False): 
+                 random_layout=False,
+                 comm_alpha=0.5,
+                 comm_beta=0.3):
         
         # 基础参数
         self.length = length
@@ -46,11 +44,6 @@ class MultiUAVWorld(object):
         self.T = t
         self.t = 0
         
-        # 边界
-        self.max_x = length
-        self.min_x = 0
-        self.max_y = width
-        self.min_y = 0
         self.uav_h = uav_h
         
         # 飞行参数
@@ -78,10 +71,11 @@ class MultiUAVWorld(object):
         self.NON_COVER_PENALTY = -10
         self.Engy_w = 0.05
         self.COLLISION_PENALTY = -500  # 🔥 碰撞惩罚
-        
-        # 巡检序列，暂时还没确定
-        # self.Traverse = traverse_sequence
-        
+
+        # 通信奖励权重
+        self.comm_alpha = comm_alpha   # G2A 中断惩罚权重
+        self.comm_beta = comm_beta     # A2G 速率奖励权重
+
         # 加载基站位置
         self.BS_loc = BS_loc
         self.set_users()
@@ -97,6 +91,18 @@ class MultiUAVWorld(object):
         # 环境地图
         self.urban_world = Rural_world(self.BS_loc)
         self.HeightMapMatrix = self.urban_world.Buliding_construct()
+
+        # 预计算最大 A2G 速率用于归一化
+        area_km = self.length / 10.0
+        sample_locs = np.zeros((100, 3))
+        sample_locs[:, 0] = np.random.uniform(0, area_km, 100)
+        sample_locs[:, 1] = np.random.uniform(0, area_km, 100)
+        sample_locs[:, 2] = self.uav_h / 10
+        try:
+            rates = A2G.getPointDateRate(sample_locs)
+            self.a2g_max_rate = float(np.max(rates))
+        except Exception:
+            self.a2g_max_rate = 1.0
         
         # 🔥 多无人机任务分配
         self.uav_targets = [None for _ in range(self.uav_num)]   # 每个无人机的当前目标
@@ -116,8 +122,6 @@ class MultiUAVWorld(object):
         self.drop_targets_per_uav = drop_targets_per_uav
         self.dropped_targets_log = {}
 
-        # self.uav_data_sizes = [0.0] * uav_num  # 每个无人机的数据传输进度
-        # self.uav_transmit_flags = [False] * uav_num  # 传输完成标志
         self.completed_targets = set()  # 已完成的目标点
         
         # 统计信息
@@ -145,30 +149,13 @@ class MultiUAVWorld(object):
         # print(f"[MultiUAVWorld] 初始化完成")
         # print(f"  - 无人机数量: {uav_num}")
         # print(f"  - 检查点数量: {len(traverse_sequence)}")
-        # print(f"  - 安全距离: {safe_distance}")
-        # print(f"  - 通信范围: {comm_range}")
-        # print(f"  - 协作模式: {cooperative_mode}")
+
 
     def set_users(self):
         """加载用户位置（检查点）"""
-        self.Users =[]
-        if os.path.exists(self.users_path): # 读写文件 # 读入用户位置
-            f = open(self.users_path, 'r')
-            if f:
-                user_loc = f.readline()
-                user_loc = user_loc.split(' ')
-                self.Users.append(User(float(user_loc[0]), float(user_loc[1]),float(user_loc[2])))
-                # self.GT_loc[len(self.Users) - 1] = np.array(
-                #     [float(user_loc[0]), float(user_loc[1]), float(user_loc[2])])
-                while user_loc:
-                    user_loc = f.readline()
-                    if user_loc:
-                        user_loc = user_loc.split(' ')
-                        self.Users.append(User(float(user_loc[0]), float(user_loc[1]),float(user_loc[2])))
-                        # self.GT_loc[len(self.Users) - 1] = np.array([float(user_loc[0]), float(user_loc[1]), float(user_loc[2])])
-                f.close()
-        else:
-            assert False, "Users file not found: " + self.users_path
+        assert os.path.exists(self.users_path), f"Users file not found: {self.users_path}"
+        data = np.loadtxt(self.users_path)
+        self.Users = [User(float(row[0]), float(row[1]), float(row[2])) for row in data]
         
     """初始化所有无人机位置"""
     def set_uavs_loc(self):
@@ -195,13 +182,9 @@ class MultiUAVWorld(object):
             else:
                 self.uav_targets[i] = None
                 
-    """为每个无人机分配初始目标点,不需要提前指定巡检序列self.uav_traverse"""
     def assign_initial_targets(self):
-        # 可选：打乱顺序以避免固定优先级
-        uav_order = list(range(self.uav_num))
-        # import random
-        # random.shuffle(uav_order)
-        for uav_id in uav_order:
+        """为每个无人机分配初始目标点（不需要提前指定巡检序列）"""
+        for uav_id in range(self.uav_num):
             self._assign_next_target(uav_id)
             
 
@@ -235,9 +218,7 @@ class MultiUAVWorld(object):
             self.assign_initial_targets()
         else:
             self.assign_targets()
-        # 重置完成
-        
-        
+
         self.t = 0
         self.fa = 0
         self.out_time = 0
@@ -370,12 +351,6 @@ class MultiUAVWorld(object):
         if self.cooperative_mode in ('dynamic', 'hybrid'):
             self._reclaim_stale_assignments()
 
-        # 更新数据传输
-        # self._update_data_transmission(uav_locations)
-
-        # 检查目标完成情况 这个函数有点多此一举了
-        # self._check_target_completion(uav_locations)
-
         # 计算奖励
         rewards = self._compute_rewards(
             uav_locations, uav_locations_pre)
@@ -424,185 +399,6 @@ class MultiUAVWorld(object):
                     self.fa += 1
                     uav.x = uav_locations_pre[i][0]
                     uav.y = uav_locations_pre[i][1]
-        
-
-    def _check_collisions(self):
-        """检查无人机之间是否碰撞"""
-        for i in range(self.uav_num):
-            for j in range(i + 1, self.uav_num):
-                pos_i = np.array([self.UAVs[i].x, self.UAVs[i].y])
-                pos_j = np.array([self.UAVs[j].x, self.UAVs[j].y])
-                distance = LA.norm(pos_i - pos_j)
-                
-                if distance < self.safe_distance:
-                    return True
-        return False
-
-    def _update_data_transmission(self, uav_locations):
-        """更新数据传输进度"""
-        for i, uav_loc in enumerate(uav_locations):
-            if not self.uav_transmit_flags[i] and self.uav_targets[i] is not None:
-                # 计算A2G信噪比
-                MaxSINR_A2G = A2G.getPointDateRate(uav_loc)
-                data_rate = self.BandWidth * np.log2(1 + 10**(MaxSINR_A2G/10.0))
-                
-                # 更新数据量
-                self.uav_data_sizes[i] -= data_rate
-                
-                if self.uav_data_sizes[i] <= 0:
-                    self.uav_data_sizes[i] = 0
-                    self.uav_transmit_flags[i] = True
-
-    # def _check_target_completion(self, uav_locations):
-    #     """检查目标完成情况"""
-    #     for i, uav_loc in enumerate(uav_locations):
-    #         if self.uav_targets[i] is not None:
-    #             target = self.Users[self.uav_targets[i]]
-    #             target_pos = np.array([target.x, target.y])
-    #             distance = LA.norm(uav_loc - target_pos)
-    #
-    #             if distance <= self.distance:  # 到达巡检点
-    #                 # if self.uav_transmit_flags[i]:  # 且传输完成
-    #                     # 标记目标完成
-    #                 self.completed_targets.add(self.uav_targets[i])
-    #                 # 分配下一个目标
-    #                 self._assign_next_target(i)
-    #         else:
-    #             # 前往终点
-    #             end_pos = np.array(self.end_loc)
-    #             distance = LA.norm(uav_loc - end_pos)
-    #             if distance <= self.distance:
-    #                 self.uav_reach_final[i] = True
-
-    # def _assign_next_target(self, uav_id):
-    #     """为无人机分配下一个目标"""
-    #     """需要提前指定每个无人机的巡检序列self.uav_traverse"""
-    #     # 找到未完成的目标
-    #     remaining_targets = [
-    #         self.uav_traverse[uav_id][idx]
-    #         for idx in range(len(self.uav_traverse[uav_id]))
-    #         if self.uav_traverse[uav_id][idx] not in self.completed_targets
-    #     ]
-        
-    #     if remaining_targets: 
-    #         # 分配最近的未完成目标
-    #         uav_pos = np.array([self.UAVs[uav_id].x, self.UAVs[uav_id].y])
-    #         min_dist = float('inf')
-    #         next_target = None
-            
-    #         for target_idx in remaining_targets:
-    #             target_pos = np.array([self.Users[target_idx].x, self.Users[target_idx].y])
-    #             dist = LA.norm(uav_pos - target_pos)
-    #             if dist < min_dist:
-    #                 min_dist = dist
-    #                 next_target = target_idx
-            
-    #         self.uav_targets[uav_id] = next_target
-    #         # self.uav_data_sizes[uav_id] = self.data_size_ini
-    #         # self.uav_transmit_flags[uav_id] = False
-    #     else:
-    #         # 所有目标完成，前往终点
-    #         self.uav_targets[uav_id] = None
-    
-    
-    
-    """为无人机分配下一个目标"""
-    def _assign_next_target(self, uav_id):
-        
-        '''动态贪心分配情况使用'''
-        if self.sequence_path is None:
-            """无需提前指定每个无人机的巡检序列，按照就近分配原则分配。
-            仅预占（reservation）目标：将 target_owner[target] = uav_id
-            完成（visited）由 UAV 真正到达时记录到 completed_targets。
-            """
-            # 剔除已完成与已被占用的目标
-            occupied = set(self.target_owner.keys())
-            remaining_targets = [idx for idx in range(self.user_num)
-                                if idx not in self.completed_targets and idx not in occupied]
-
-            if remaining_targets:
-                # 分配最近的未完成未被占用目标
-                uav_pos = np.array([self.UAVs[uav_id].x, self.UAVs[uav_id].y])
-                min_dist = float('inf')
-                next_target = None
-
-                for target_idx in remaining_targets:
-                    target_pos = np.array([self.Users[target_idx].x, self.Users[target_idx].y])
-                    dist = LA.norm(uav_pos - target_pos)
-                    if dist < min_dist:
-                        min_dist = dist
-                        next_target = target_idx
-
-                # 预占该目标，记录分配时间
-                if next_target is not None:
-                    self.target_owner[next_target] = uav_id
-                    self.assigned_time[next_target] = self.t
-                    self.uav_targets[uav_id] = next_target
-                else:
-                    # 没有可立即分配的目标
-                    # 如果还有未完成的目标，但都被占用，则进入等待状态；
-                    # 当所有目标都被完成时，标记该 UAV 为已完成（无需再飞往终点）
-                    if len(self.completed_targets) < self.user_num:
-                        # 仍有未完成的目标，但当前无可分配，等待被分配
-                        self.uav_targets[uav_id] = self.WAIT_TARGET
-                    else:
-                        # 所有目标已完成，标记该 UAV 为已完成（不再飞往终点）
-                        self.uav_targets[uav_id] = None
-                        self.uav_reach_final[uav_id] = True
-
-            return self.uav_targets[uav_id]
-        
-        # 预定义巡检序列分配
-        else:
-            # 按照序列顺序，找到第一个还没被加入 completed_targets 的点
-            remaining_targets = [
-                tgt for tgt in self.uav_traverse[uav_id]
-                if tgt not in self.completed_targets
-            ]
-            
-            if remaining_targets:
-                self.uav_targets[uav_id] = remaining_targets[0]
-            else:
-                # 序列中的点全飞完了，标记该 UAV 为已完成（不再飞往终点）
-                self.uav_targets[uav_id] = None
-                self.uav_reach_final[uav_id] = True
-                print(f"UAV {uav_id} 已在最后巡检点完成所有任务，原地悬停！")
-                
-            return self.uav_targets[uav_id]
-
-    def _on_reach_target(self, uav_id, target_idx):
-        
-        """处理 UAV 真正到达并完成目标时的逻辑
-
-        动态贪心分配 (sequence_path is None) 与预定义巡检序列
-        的处理分支应该对应正确的条件，这里修正为：
-        - 若 `sequence_path is None` 则处理 reservation/assigned_time 的释放（动态分配）
-        - 否则按序列分配下一个目标（预定义序列）
-        """
-        # 动态贪心分配情况下：释放 reservation 并分配下一个目标
-        if self.sequence_path is None:
-            if target_idx is None:
-                return
-            self.completed_targets.add(target_idx)
-            if target_idx in self.target_owner:
-                try:
-                    del self.target_owner[target_idx]
-                except KeyError:
-                    pass
-            if target_idx in self.assigned_time:
-                try:
-                    del self.assigned_time[target_idx]
-                except KeyError:
-                    pass
-            self._assign_next_target(uav_id)
-        else:
-            # 预定义巡检序列：标记完成并按照序列分配下一个目标
-            if target_idx is None:
-                return
-            self.completed_targets.add(target_idx)
-            self._assign_next_target(uav_id)
-            
-            
 
     def _reclaim_stale_assignments(self):
         """回收长期未完成的分配，避免目标被永久占用"""
@@ -738,6 +534,30 @@ class MultiUAVWorld(object):
                 self.uav_traverse[i] = list(original_seq)
                 self.dropped_targets_log[i] = []
 
+    def _get_g2a_outage(self, x, y):
+        """获取位置 (x, y) 处的 G2A 最小中断概率。坐标单位: 100m。"""
+        loc_km = np.zeros((1, 3))
+        loc_km[0, 0] = x / 10
+        loc_km[0, 1] = y / 10
+        loc_km[0, 2] = self.uav_h / 10
+        try:
+            outage = G2A.getPointMiniOutage(loc_km)
+            return float(outage[0][0])
+        except Exception:
+            return 0.0
+
+    def _get_a2g_rate(self, x, y):
+        """获取位置 (x, y) 处的 A2G 数据速率 (SINR)。坐标单位: 100m。"""
+        loc_km = np.zeros((1, 3))
+        loc_km[0, 0] = x / 10
+        loc_km[0, 1] = y / 10
+        loc_km[0, 2] = self.uav_h / 10
+        try:
+            rate = A2G.getPointDateRate(loc_km)
+            return float(rate)
+        except Exception:
+            return 0.0
+
     def _compute_rewards(self, uav_locations, uav_locations_pre):
         """计算每个无人机的奖励。
 
@@ -840,6 +660,18 @@ class MultiUAVWorld(object):
                     reward += 400.0
                     self._on_reach_target(i, tgt)
 
+            # 通信奖励（仅对有活跃目标的 UAV 生效）
+            if active_target:
+                # G2A 中断惩罚: 中断概率越高，惩罚越大
+                g2a_outage = self._get_g2a_outage(uav.x, uav.y)
+                r_g2a = -self.comm_alpha * g2a_outage
+                reward += r_g2a
+
+                # A2G 速率奖励: 速率越高，奖励越大（归一化到 [0, 1]）
+                a2g_rate = self._get_a2g_rate(uav.x, uav.y)
+                r_a2g = self.comm_beta * a2g_rate / max(self.a2g_max_rate, 1e-8)
+                reward += r_a2g
+
             # 接近其他无人机的惩罚
             for j in range(self.uav_num):
                 if i == j or self.uav_reach_final[j]:
@@ -865,34 +697,22 @@ class MultiUAVWorld(object):
         return rewards
 
     def _check_done(self):
-        
-        """检查每个无人机是否完成"""
-        dones = False
-        
-        # 任务完成或超时
-        if self.terminal or self.t >= self.T:
-            dones = True
-        else :
-            dones = False
-        
-        return dones    
+        """检查是否完成（任务完成或超时）"""
+        return self.terminal or self.t >= self.T    
         
     def boundary_margin(self, uav):
         """检查无人机是否出界"""
         margin = 1.0
         penalty_factor = 100 / self.uav_num
-        
-        center_x = (self.max_x + self.min_x) / 2
-        center_y = (self.max_y + self.min_y) / 2
-        
-        x_exceed = max(abs(uav.x - center_x) - margin * (self.max_x - self.min_x) / 2, 0.0)
-        y_exceed = max(abs(uav.y - center_y) - margin * (self.max_y - self.min_y) / 2, 0.0)
-        
+        half_x = self.length / 2
+        half_y = self.width / 2
+
+        x_exceed = max(abs(uav.x - half_x) - margin * half_x, 0.0)
+        y_exceed = max(abs(uav.y - half_y) - margin * half_y, 0.0)
+
         if x_exceed == 0.0 and y_exceed == 0.0:
             return 0.0, True
-        else:
-            penalty = penalty_factor * (x_exceed**2 + y_exceed**2)
-            return penalty, False
+        return penalty_factor * (x_exceed**2 + y_exceed**2), False
 
     @property
     def local_obs_dim(self):
