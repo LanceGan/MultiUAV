@@ -262,7 +262,7 @@ class MultiUAVWorld(object):
         uav = self.UAVs[uav_id]
         obs = []
 
-        max_dist = np.sqrt(self.max_x ** 2 + self.max_y ** 2) + 1e-8
+        max_dist = np.sqrt(self.length ** 2 + self.width ** 2) + 1e-8
         remaining_time = max(0.0, (self.T - self.t) / max(self.T, 1))
 
         # 1. 自身归一化位置
