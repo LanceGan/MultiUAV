@@ -1,0 +1,86 @@
+{
+  "n_uav": 3,
+  "n_users": 30,
+  "population_sizes": {
+    "25": {
+      "cluster_0": {
+        "path_length": 6308164.391665,
+        "time_s": 125.04
+      },
+      "cluster_1": {
+        "path_length": 4285788.566387,
+        "time_s": 99.21
+      },
+      "cluster_2": {
+        "path_length": 8276954.918822,
+        "time_s": 102.82
+      },
+      "total_path_length": 18870907.876873,
+      "total_time_s": 327.07
+    },
+    "50": {
+      "cluster_0": {
+        "path_length": 6375997.610819,
+        "time_s": 127.43
+      },
+      "cluster_1": {
+        "path_length": 4335157.561929,
+        "time_s": 99.5
+      },
+      "cluster_2": {
+        "path_length": 8325030.774004,
+        "time_s": 140.96
+      },
+      "total_path_length": 19036185.946753,
+      "total_time_s": 367.89
+    },
+    "100": {
+      "cluster_0": {
+        "path_length": 6335093.036676,
+        "time_s": 199.62
+      },
+      "cluster_1": {
+        "path_length": 4293555.02018,
+        "time_s": 101.11
+      },
+      "cluster_2": {
+        "path_length": 8270346.080891,
+        "time_s": 112.01
+      },
+      "total_path_length": 18898994.137747,
+      "total_time_s": 412.74
+    },
+    "150": {
+      "cluster_0": {
+        "path_length": 6366725.869708,
+        "time_s": 141.54
+      },
+      "cluster_1": {
+        "path_length": 4066610.89364,
+        "time_s": 195.78
+      },
+      "cluster_2": {
+        "path_length": 8303261.789686,
+        "time_s": 214.94
+      },
+      "total_path_length": 18736598.553035,
+      "total_time_s": 552.26
+    },
+    "200": {
+      "cluster_0": {
+        "path_length": 6281944.976707,
+        "time_s": 125.1
+      },
+      "cluster_1": {
+        "path_length": 3837905.389593,
+        "time_s": 99.9
+      },
+      "cluster_2": {
+        "path_length": 8314894.842911,
+        "time_s": 103.94
+      },
+      "total_path_length": 18434745.209211,
+      "total_time_s": 328.93
+    }
+  }
+}

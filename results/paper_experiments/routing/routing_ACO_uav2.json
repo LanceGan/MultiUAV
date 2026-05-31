@@ -1,0 +1,41 @@
+{
+  "cluster_0": {
+    "path_length": 268.539965,
+    "num_nodes": 12,
+    "best_indices": [
+      0,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      11
+    ],
+    "time_s": 1.17
+  },
+  "cluster_1": {
+    "path_length": 160.122544,
+    "num_nodes": 12,
+    "best_indices": [
+      0,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      11
+    ],
+    "time_s": 1.16
+  },
+  "total_path_length": 428.662509
+}

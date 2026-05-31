@@ -206,7 +206,7 @@ class GA(object):
         loc_km = np.zeros(shape=(1, 3))
         loc_km[0, :2] = location / 10
         loc_km[0, 2] = 0.1
-        outage = rad_env_g2a.getPointMiniOutage(loc_km)
+        outage, _ = rad_env_g2a.getPointMiniOutage(loc_km)
         return float(outage[0])
 
     def compute_g2a_outage_matrix(self, num_city, location):

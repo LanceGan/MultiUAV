@@ -1,0 +1,134 @@
+{
+  "n_uav": 3,
+  "n_users": 30,
+  "data_sizes": {
+    "50": {
+      "cluster_0": {
+        "path_length": 6267018.661873,
+        "time_s": 147.85
+      },
+      "cluster_1": {
+        "path_length": 4251505.322752,
+        "time_s": 120.93
+      },
+      "cluster_2": {
+        "path_length": 8299781.708837,
+        "time_s": 112.26
+      },
+      "total_path_length": 18818305.693462,
+      "total_time_s": 381.04
+    },
+    "100": {
+      "cluster_0": {
+        "path_length": 6375186.11672,
+        "time_s": 221.76
+      },
+      "cluster_1": {
+        "path_length": 4107878.443715,
+        "time_s": 138.29
+      },
+      "cluster_2": {
+        "path_length": 8536803.906018,
+        "time_s": 105.62
+      },
+      "total_path_length": 19019868.466453,
+      "total_time_s": 465.66
+    },
+    "150": {
+      "cluster_0": {
+        "path_length": 6262065.602756,
+        "time_s": 151.92
+      },
+      "cluster_1": {
+        "path_length": 4720738.636491,
+        "time_s": 240.12
+      },
+      "cluster_2": {
+        "path_length": 8324280.185537,
+        "time_s": 102.48
+      },
+      "total_path_length": 19307084.424784,
+      "total_time_s": 494.52
+    },
+    "200": {
+      "cluster_0": {
+        "path_length": 6252042.446506,
+        "time_s": 226.01
+      },
+      "cluster_1": {
+        "path_length": 4298989.366416,
+        "time_s": 215.41
+      },
+      "cluster_2": {
+        "path_length": 8290516.110084,
+        "time_s": 196.71
+      },
+      "total_path_length": 18841547.923006,
+      "total_time_s": 638.13
+    },
+    "250": {
+      "cluster_0": {
+        "path_length": 6330096.193365,
+        "time_s": 126.27
+      },
+      "cluster_1": {
+        "path_length": 4266774.10308,
+        "time_s": 123.0
+      },
+      "cluster_2": {
+        "path_length": 8282776.482418,
+        "time_s": 219.67
+      },
+      "total_path_length": 18879646.778862,
+      "total_time_s": 468.95
+    },
+    "300": {
+      "cluster_0": {
+        "path_length": 6334345.721725,
+        "time_s": 269.03
+      },
+      "cluster_1": {
+        "path_length": 4690623.606313,
+        "time_s": 212.93
+      },
+      "cluster_2": {
+        "path_length": 8290406.062128,
+        "time_s": 99.58
+      },
+      "total_path_length": 19315375.390166,
+      "total_time_s": 581.54
+    },
+    "350": {
+      "cluster_0": {
+        "path_length": 6284771.125947,
+        "time_s": 122.4
+      },
+      "cluster_1": {
+        "path_length": 4251435.115005,
+        "time_s": 193.36
+      },
+      "cluster_2": {
+        "path_length": 8328481.118965,
+        "time_s": 220.63
+      },
+      "total_path_length": 18864687.359918,
+      "total_time_s": 536.4
+    },
+    "400": {
+      "cluster_0": {
+        "path_length": 6327551.334559,
+        "time_s": 269.48
+      },
+      "cluster_1": {
+        "path_length": 4749195.876353,
+        "time_s": 246.11
+      },
+      "cluster_2": {
+        "path_length": 8274385.814056,
+        "time_s": 220.74
+      },
+      "total_path_length": 19351133.024968,
+      "total_time_s": 736.33
+    }
+  }
+}

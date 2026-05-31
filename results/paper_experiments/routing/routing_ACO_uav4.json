@@ -1,0 +1,79 @@
+{
+  "cluster_0": {
+    "path_length": 120.482106,
+    "num_nodes": 12,
+    "best_indices": [
+      0,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      11
+    ],
+    "time_s": 1.18
+  },
+  "cluster_1": {
+    "path_length": 118.901107,
+    "num_nodes": 12,
+    "best_indices": [
+      0,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      11
+    ],
+    "time_s": 1.17
+  },
+  "cluster_2": {
+    "path_length": 135.420825,
+    "num_nodes": 12,
+    "best_indices": [
+      0,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      11
+    ],
+    "time_s": 1.15
+  },
+  "cluster_3": {
+    "path_length": 159.815419,
+    "num_nodes": 12,
+    "best_indices": [
+      0,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      11
+    ],
+    "time_s": 1.16
+  },
+  "total_path_length": 534.619457
+}
