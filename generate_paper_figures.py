@@ -539,64 +539,320 @@ def generate_weight_evolution_figure():
 # Figure 9: Parameter sensitivity
 # ===================================================================
 def generate_sensitivity_figure():
-    """Two-panel: (a) pop size vs quality/runtime, (b) init penalty vs balance/time."""
+    """Dual-axis plots for GA population and data volume sensitivity.
+
+    Loads sensitivity data from ``results/paper_experiments/sensitivity/``
+    and produces two separate figures:
+
+    * ``ga_population_sensitivity.png`` -- path length and runtime vs
+      GA population size.
+    * ``data_volume_sensitivity.png`` -- path length and runtime vs
+      inspection data volume.
+
+    If the sensitivity data directory or files are missing, synthetic
+    data is generated as a placeholder so that the pipeline does not
+    break.
+    """
     _ensure_save_dir()
-    np.random.seed(2)
+    sensitivity_dir = os.path.join(EXPERIMENT_DIR, 'sensitivity')
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.2, 3.2))
+    # ------------------------------------------------------------------
+    # Figure (a): GA population size sensitivity
+    # ------------------------------------------------------------------
+    pop_json = os.path.join(sensitivity_dir, 'ga_population_sensitivity.json')
+    if os.path.isfile(pop_json):
+        with open(pop_json) as f:
+            pop_data = json.load(f)
+        pop_sizes = np.array(pop_data['pop_sizes'], dtype=float)
+        path_lengths = np.array(pop_data['path_lengths'], dtype=float)
+        runtimes = np.array(pop_data['runtimes'], dtype=float)
+    else:
+        print(f'[WARN] {pop_json} not found, generating synthetic data.')
+        pop_sizes = np.array([20, 50, 100, 150, 200, 300])
+        np.random.seed(2)
+        path_lengths = 280 - 60 * (1 - np.exp(-0.015 * pop_sizes)) + \
+                       np.random.normal(0, 3, len(pop_sizes))
+        runtimes = 0.08 * pop_sizes + 5 + np.random.normal(0, 1.5, len(pop_sizes))
 
-    # --- Panel (a): GA population size ---
-    pop_sizes = np.array([20, 50, 100, 150, 200, 300])
-    # Solution quality (composite path cost) - decreasing with diminishing returns
-    quality = 280 - 60 * (1 - np.exp(-0.015 * pop_sizes)) + \
-              np.random.normal(0, 3, len(pop_sizes))
-    # Runtime (s) - roughly linear
-    runtime = 0.08 * pop_sizes + 5 + np.random.normal(0, 1.5, len(pop_sizes))
-
+    fig, ax1 = plt.subplots(figsize=(5.0, 3.2))
     color1, color2 = '#1f77b4', '#d62728'
     ax1_twin = ax1.twinx()
-    ln1 = ax1.plot(pop_sizes, quality, 'o-', color=color1, linewidth=1.3,
-                   markersize=5, label='Path Cost')
-    ln2 = ax1_twin.plot(pop_sizes, runtime, 's--', color=color2, linewidth=1.3,
+    ln1 = ax1.plot(pop_sizes, path_lengths, 'o-', color=color1, linewidth=1.3,
+                   markersize=5, label='Path Length')
+    ln2 = ax1_twin.plot(pop_sizes, runtimes, 's--', color=color2, linewidth=1.3,
                         markersize=5, label='Runtime')
     ax1.set_xlabel(r'GA Population Size $N_{\mathrm{pop}}$')
-    ax1.set_ylabel('Composite Path Cost', color=color1)
+    ax1.set_ylabel('Total Path Length (m)', color=color1)
     ax1_twin.set_ylabel('Runtime (s)', color=color2)
     ax1.tick_params(axis='y', labelcolor=color1)
     ax1_twin.tick_params(axis='y', labelcolor=color2)
     lines = ln1 + ln2
     labels = [l.get_label() for l in lines]
-    ax1.legend(lines, labels, loc='center right', fontsize=8)
-    ax1.set_title('(a)', fontsize=11, fontweight='bold')
+    ax1.legend(lines, labels, loc='center right', fontsize=9)
     ax1.grid(True, alpha=0.3)
 
-    # --- Panel (b): Initial penalty weight ---
-    omegas = np.array([0.01, 0.05, 0.10, 0.20, 0.30, 0.50, 1.00])
-    # Load balance std - U-shaped (good near 0.1)
-    balance = 3.5 * (omegas - 0.10)**2 + 1.2 + np.random.normal(0, 0.15, len(omegas))
-    # Mission time - also U-shaped but different optimum
-    mission = 8.0 * (omegas - 0.15)**2 + 180 + np.random.normal(0, 2, len(omegas))
+    fig.tight_layout()
+    out_a = os.path.join(SAVE_DIR, 'ga_population_sensitivity.png')
+    fig.savefig(out_a)
+    plt.close(fig)
+    print(f'[OK] Saved {out_a}')
 
+    # ------------------------------------------------------------------
+    # Figure (b): Data volume sensitivity
+    # ------------------------------------------------------------------
+    vol_json = os.path.join(sensitivity_dir, 'data_volume_sensitivity.json')
+    if os.path.isfile(vol_json):
+        with open(vol_json) as f:
+            vol_data = json.load(f)
+        data_sizes = np.array(vol_data['data_sizes'], dtype=float)
+        path_lengths_v = np.array(vol_data['path_lengths'], dtype=float)
+        runtimes_v = np.array(vol_data['runtimes'], dtype=float)
+    else:
+        print(f'[WARN] {vol_json} not found, generating synthetic data.')
+        data_sizes = np.array([1, 2, 5, 8, 10, 15, 20])
+        np.random.seed(3)
+        path_lengths_v = 260 + 2.5 * data_sizes + \
+                         np.random.normal(0, 3, len(data_sizes))
+        runtimes_v = 40 + 3.0 * data_sizes + \
+                     np.random.normal(0, 2, len(data_sizes))
+
+    fig, ax2 = plt.subplots(figsize=(5.0, 3.2))
     color3, color4 = '#2ca02c', '#9467bd'
     ax2_twin = ax2.twinx()
-    ln3 = ax2.plot(omegas, balance, 'o-', color=color3, linewidth=1.3,
-                   markersize=5, label=r'$\sigma_W$ (Load Balance)')
-    ln4 = ax2_twin.plot(omegas, mission, 's--', color=color4, linewidth=1.3,
-                        markersize=5, label=r'$T_{\max}$ (Mission Time)')
-    ax2.set_xlabel(r'Initial Penalty Weight $\omega^{(0)}$')
-    ax2.set_ylabel(r'$\sigma_W$', color=color3)
-    ax2_twin.set_ylabel(r'Mission Time $T_{\max}$ (s)', color=color4)
+    ln3 = ax2.plot(data_sizes, path_lengths_v, 'o-', color=color3,
+                   linewidth=1.3, markersize=5, label='Path Length')
+    ln4 = ax2_twin.plot(data_sizes, runtimes_v, 's--', color=color4,
+                        linewidth=1.3, markersize=5, label='Runtime')
+    ax2.set_xlabel('Inspection Data Volume (MB)')
+    ax2.set_ylabel('Total Path Length (m)', color=color3)
+    ax2_twin.set_ylabel('Runtime (s)', color=color4)
     ax2.tick_params(axis='y', labelcolor=color3)
     ax2_twin.tick_params(axis='y', labelcolor=color4)
     lines2 = ln3 + ln4
     labels2 = [l.get_label() for l in lines2]
-    ax2.legend(lines2, labels2, loc='upper right', fontsize=8)
-    ax2.set_title('(b)', fontsize=11, fontweight='bold')
+    ax2.legend(lines2, labels2, loc='center right', fontsize=9)
     ax2.grid(True, alpha=0.3)
-    ax2.set_xscale('log')
 
     fig.tight_layout()
-    out = os.path.join(SAVE_DIR, 'parameter_sensitivity.png')
+    out_b = os.path.join(SAVE_DIR, 'data_volume_sensitivity.png')
+    fig.savefig(out_b)
+    plt.close(fig)
+    print(f'[OK] Saved {out_b}')
+
+
+# ===================================================================
+# Figure 10: Multi-data-volume trajectory comparison
+# ===================================================================
+def generate_multi_data_trajectory_figure():
+    """Trajectory comparison figures for different inspection data volumes.
+
+    Loads routing results from ``results/paper_experiments/multi_data/``
+    and generates one trajectory comparison figure per data size.  Each
+    figure shows the UAV paths overlaid on the inspection area with
+    colour-coded clusters.
+
+    Output files are named ``trajectory_comparison_{data_size}mb.png``
+    and saved to the LaTeX figure directory.
+    """
+    _ensure_save_dir()
+    multi_data_dir = os.path.join(EXPERIMENT_DIR, 'multi_data')
+
+    if not os.path.isdir(multi_data_dir):
+        print(f'[WARN] {multi_data_dir} not found, generating synthetic '
+              'trajectory comparison.')
+        _generate_synthetic_multi_data_figure()
+        return
+
+    # Discover available data-size JSON files.  Expected naming:
+    #   routing_{size}mb_uav{n}.json  or  summary_{size}mb.json
+    json_files = sorted(f for f in os.listdir(multi_data_dir)
+                        if f.endswith('.json'))
+
+    if not json_files:
+        print(f'[WARN] No JSON files in {multi_data_dir}, generating '
+              'synthetic trajectory comparison.')
+        _generate_synthetic_multi_data_figure()
+        return
+
+    # Try to load a summary file first; otherwise iterate per-size files
+    summary_file = os.path.join(multi_data_dir, 'multi_data_summary.json')
+    if os.path.isfile(summary_file):
+        with open(summary_file) as f:
+            summary = json.load(f)
+        for entry in summary.get('experiments', []):
+            data_size = entry['data_size_mb']
+            routes = entry.get('routes', {})
+            _plot_trajectory_from_routes(routes, data_size)
+    else:
+        # Group files by data size
+        from collections import defaultdict
+        size_groups = defaultdict(dict)
+        for fname in json_files:
+            # Expect pattern: routing_{size}mb_uav{n}.json
+            parts = fname.replace('.json', '').split('_')
+            # Find the data-size token (e.g. "5mb")
+            for token in parts:
+                if token.endswith('mb'):
+                    size_key = token
+                    break
+            else:
+                continue
+            fpath = os.path.join(multi_data_dir, fname)
+            with open(fpath) as f:
+                size_groups[size_key][fname] = json.load(f)
+
+        for size_key in sorted(size_groups.keys()):
+            data_mb = size_key.replace('mb', '')
+            all_routes = {}
+            for fname, content in size_groups[size_key].items():
+                # Merge cluster routes from each file
+                for cluster_key, cluster_val in content.items():
+                    if cluster_key.startswith('cluster_') and \
+                            isinstance(cluster_val, dict):
+                        all_routes[cluster_key] = cluster_val
+            _plot_trajectory_from_routes(all_routes, data_mb)
+
+
+def _plot_trajectory_from_routes(routes, data_size):
+    """Plot UAV trajectories from a routes dict and save the figure.
+
+    Parameters
+    ----------
+    routes : dict
+        Mapping of ``'cluster_N'`` to dicts with ``'best_indices'`` and
+        optionally ``'path_length'``.
+    data_size : str or int
+        The data volume label used in the output filename.
+    """
+    n_uavs = len(routes)
+    if n_uavs == 0:
+        return
+
+    # Load inspection-point coordinates for the corresponding UAV count
+    user_num = UAV_USER_MAP.get(n_uavs, 30)
+    coords = _load_user_coords(user_num)
+
+    fig, ax = plt.subplots(figsize=(5.0, 4.5))
+
+    # Area boundary
+    area_rect = mpatches.FancyBboxPatch(
+        (0, 0), 40, 40, boxstyle='round,pad=0.5',
+        edgecolor='black', facecolor='#f9f9f9', linewidth=1.2)
+    ax.add_patch(area_rect)
+
+    ini = np.array(INI_LOC)
+    end = np.array(END_LOC)
+
+    for idx, (cluster_key, cluster_val) in enumerate(sorted(routes.items())):
+        color = CLUSTER_COLORS[idx % len(CLUSTER_COLORS)]
+        indices = cluster_val.get('best_indices', [])
+        if not indices:
+            continue
+
+        pts = coords[indices, :2]
+        path = np.vstack([ini, pts, end])
+        ax.plot(path[:, 0], path[:, 1], '-o', color=color, linewidth=1.3,
+                markersize=4, alpha=0.85, label=f'UAV {idx}')
+
+    # Start / end markers
+    ax.scatter([ini[0]], [ini[1]], marker='*', s=200, c='#2ca02c',
+               edgecolors='black', linewidths=0.6, zorder=6)
+    ax.scatter([end[0]], [end[1]], marker='*', s=200, c='#ff7f0e',
+               edgecolors='black', linewidths=0.6, zorder=6)
+    ax.annotate('Start', ini, textcoords='offset points',
+                xytext=(-14, 8), fontsize=8, fontweight='bold',
+                color='#2ca02c')
+    ax.annotate('End', end, textcoords='offset points',
+                xytext=(6, -12), fontsize=8, fontweight='bold',
+                color='#ff7f0e')
+
+    ax.set_xlim(-2, 44)
+    ax.set_ylim(-2, 44)
+    ax.set_aspect('equal')
+    ax.set_xlabel('X (km)')
+    ax.set_ylabel('Y (km)')
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(10))
+    ax.legend(loc='upper left', fontsize=8, framealpha=0.9)
+    ax.set_title(f'Trajectory Comparison -- {data_size} MB',
+                 fontsize=12, fontweight='bold')
+
+    fig.tight_layout()
+    out = os.path.join(SAVE_DIR, f'trajectory_comparison_{data_size}mb.png')
+    fig.savefig(out)
+    plt.close(fig)
+    print(f'[OK] Saved {out}')
+
+
+def _generate_synthetic_multi_data_figure():
+    """Generate a synthetic multi-data-volume trajectory comparison figure.
+
+    Used as a placeholder when real experiment data is not yet available.
+    Produces one figure for a nominal 5 MB data volume using the default
+    3-UAV routing results if present, or random paths otherwise.
+    """
+    n_uavs = 3
+    user_num = UAV_USER_MAP[n_uavs]
+    coords = _load_user_coords(user_num)
+
+    # Try to load real routing data as the base
+    seq_dir = os.path.join(DATA_DIR, 'sequence')
+    fname = f'Users_{user_num}_Clusteredsave_path_PathUAV_GA_{n_uavs}.npz'
+    fpath = os.path.join(seq_dir, fname)
+
+    if os.path.isfile(fpath):
+        data = np.load(fpath, allow_pickle=True)
+        result = data['result'].item()
+    else:
+        # Fall back: random partition
+        rng = np.random.RandomState(42)
+        order = rng.permutation(user_num)
+        splits = np.array_split(order, n_uavs)
+        result = {f'cluster_{i}': splits[i].tolist()
+                  for i in range(n_uavs)}
+
+    fig, ax = plt.subplots(figsize=(5.0, 4.5))
+
+    area_rect = mpatches.FancyBboxPatch(
+        (0, 0), 40, 40, boxstyle='round,pad=0.5',
+        edgecolor='black', facecolor='#f9f9f9', linewidth=1.2)
+    ax.add_patch(area_rect)
+
+    ini = np.array(INI_LOC)
+    end = np.array(END_LOC)
+
+    for idx, (uav_key, route) in enumerate(sorted(result.items())):
+        color = CLUSTER_COLORS[idx % len(CLUSTER_COLORS)]
+        route_arr = np.array(route)
+        pts = coords[route_arr, :2]
+        path = np.vstack([ini, pts, end])
+        ax.plot(path[:, 0], path[:, 1], '-o', color=color, linewidth=1.3,
+                markersize=4, alpha=0.85, label=f'UAV {idx}')
+
+    ax.scatter([ini[0]], [ini[1]], marker='*', s=200, c='#2ca02c',
+               edgecolors='black', linewidths=0.6, zorder=6)
+    ax.scatter([end[0]], [end[1]], marker='*', s=200, c='#ff7f0e',
+               edgecolors='black', linewidths=0.6, zorder=6)
+    ax.annotate('Start', ini, textcoords='offset points',
+                xytext=(-14, 8), fontsize=8, fontweight='bold',
+                color='#2ca02c')
+    ax.annotate('End', end, textcoords='offset points',
+                xytext=(6, -12), fontsize=8, fontweight='bold',
+                color='#ff7f0e')
+
+    ax.set_xlim(-2, 44)
+    ax.set_ylim(-2, 44)
+    ax.set_aspect('equal')
+    ax.set_xlabel('X (km)')
+    ax.set_ylabel('Y (km)')
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(10))
+    ax.legend(loc='upper left', fontsize=8, framealpha=0.9)
+    ax.set_title('Trajectory Comparison -- 5 MB (synthetic)',
+                 fontsize=12, fontweight='bold')
+
+    fig.tight_layout()
+    out = os.path.join(SAVE_DIR, 'trajectory_comparison_5mb.png')
     fig.savefig(out)
     plt.close(fig)
     print(f'[OK] Saved {out}')
@@ -615,6 +871,7 @@ FIGURE_MAP = {
     'ga_convergence': generate_ga_convergence_figure,
     'weight_evolution': generate_weight_evolution_figure,
     'sensitivity': generate_sensitivity_figure,
+    'multi_data': generate_multi_data_trajectory_figure,
 }
 
 
