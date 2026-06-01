@@ -12,20 +12,21 @@
 
 ### 🔴 严重问题 (Critical)
 
-#### 问题 1: `self.max_x` 属性被删除但仍被引用
+#### 问题 1: `self.max_x` 属性被删除但仍被引用 ✅ 已修复
 
 **文件**: `MultiUAVWorld.py:265`
 **问题**: `self.max_x`, `self.min_x`, `self.max_y`, `self.min_y` 在 `__init__` 中被删除，但 `_get_local_observation()` 方法仍然引用 `self.max_x` 和 `self.max_y`。
 **影响**: 调用 `reset()` 或 `get_observations()` 时会抛出 `AttributeError: 'MultiUAVWorld' object has no attribute 'max_x'`
-**代码**:
-```python
-# line 265
-max_dist = np.sqrt(self.max_x ** 2 + self.max_y ** 2) + 1e-8
-```
-**修复建议**: 将 `self.max_x` 替换为 `self.length`，`self.max_y` 替换为 `self.width`：
-```python
-max_dist = np.sqrt(self.length ** 2 + self.width ** 2) + 1e-8
-```
+**修复状态**: ✅ 已修复 - 替换为 `self.length` 和 `self.width`
+
+---
+
+#### 问题 9: 通信奖励中使用未定义的 `uav` 变量 ✅ 已修复
+
+**文件**: `MultiUAVWorld.py:675-685`
+**问题**: 通信奖励代码中使用 `uav.x, uav.y` 获取 UAV 位置，但 `uav` 变量在 `_compute_rewards` 方法的作用域中未定义。
+**影响**: 运行时抛出 `NameError: name 'uav' is not defined`
+**修复状态**: ✅ 已修复 - 改为使用 `uav_locations[i][0]` 和 `uav_locations[i][1]`
 
 ---
 
