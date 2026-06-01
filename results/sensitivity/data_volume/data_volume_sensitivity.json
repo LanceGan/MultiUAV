@@ -4,131 +4,131 @@
   "data_sizes": {
     "50": {
       "cluster_0": {
-        "path_length": 6267018.661873,
-        "time_s": 147.85
+        "path_length": 6308164.391665,
+        "time_s": 122.12
       },
       "cluster_1": {
-        "path_length": 4251505.322752,
-        "time_s": 120.93
+        "path_length": 4332755.027731,
+        "time_s": 97.04
       },
       "cluster_2": {
-        "path_length": 8299781.708837,
-        "time_s": 112.26
+        "path_length": 8316571.771507,
+        "time_s": 100.27
       },
-      "total_path_length": 18818305.693462,
-      "total_time_s": 381.04
+      "total_path_length": 18957491.190902,
+      "total_time_s": 319.43
     },
     "100": {
       "cluster_0": {
-        "path_length": 6375186.11672,
-        "time_s": 221.76
+        "path_length": 6416010.089868,
+        "time_s": 122.98
       },
       "cluster_1": {
-        "path_length": 4107878.443715,
-        "time_s": 138.29
+        "path_length": 4431570.712006,
+        "time_s": 96.44
       },
       "cluster_2": {
-        "path_length": 8536803.906018,
-        "time_s": 105.62
+        "path_length": 8299823.908097,
+        "time_s": 99.04
       },
-      "total_path_length": 19019868.466453,
-      "total_time_s": 465.66
+      "total_path_length": 19147404.709971,
+      "total_time_s": 318.46
     },
     "150": {
       "cluster_0": {
-        "path_length": 6262065.602756,
-        "time_s": 151.92
+        "path_length": 6248339.45462,
+        "time_s": 122.67
       },
       "cluster_1": {
-        "path_length": 4720738.636491,
-        "time_s": 240.12
+        "path_length": 4085347.810991,
+        "time_s": 97.51
       },
       "cluster_2": {
-        "path_length": 8324280.185537,
-        "time_s": 102.48
+        "path_length": 8297853.711363,
+        "time_s": 99.98
       },
-      "total_path_length": 19307084.424784,
-      "total_time_s": 494.52
+      "total_path_length": 18631540.976974,
+      "total_time_s": 320.16
     },
     "200": {
       "cluster_0": {
-        "path_length": 6252042.446506,
-        "time_s": 226.01
+        "path_length": 6316801.372307,
+        "time_s": 122.04
       },
       "cluster_1": {
-        "path_length": 4298989.366416,
-        "time_s": 215.41
+        "path_length": 4304026.02085,
+        "time_s": 96.24
       },
       "cluster_2": {
-        "path_length": 8290516.110084,
-        "time_s": 196.71
+        "path_length": 8276445.257888,
+        "time_s": 100.03
       },
-      "total_path_length": 18841547.923006,
-      "total_time_s": 638.13
+      "total_path_length": 18897272.651045,
+      "total_time_s": 318.32
     },
     "250": {
       "cluster_0": {
-        "path_length": 6330096.193365,
-        "time_s": 126.27
+        "path_length": 6240162.471269,
+        "time_s": 122.21
       },
       "cluster_1": {
-        "path_length": 4266774.10308,
-        "time_s": 123.0
+        "path_length": 4358060.817369,
+        "time_s": 96.32
       },
       "cluster_2": {
-        "path_length": 8282776.482418,
-        "time_s": 219.67
+        "path_length": 8289310.277808,
+        "time_s": 100.05
       },
-      "total_path_length": 18879646.778862,
-      "total_time_s": 468.95
+      "total_path_length": 18887533.566446,
+      "total_time_s": 318.58
     },
     "300": {
       "cluster_0": {
-        "path_length": 6334345.721725,
-        "time_s": 269.03
+        "path_length": 6348202.082634,
+        "time_s": 122.42
       },
       "cluster_1": {
-        "path_length": 4690623.606313,
-        "time_s": 212.93
+        "path_length": 4226664.541492,
+        "time_s": 96.39
       },
       "cluster_2": {
-        "path_length": 8290406.062128,
-        "time_s": 99.58
+        "path_length": 8325277.341159,
+        "time_s": 99.86
       },
-      "total_path_length": 19315375.390166,
-      "total_time_s": 581.54
+      "total_path_length": 18900143.965285,
+      "total_time_s": 318.67
     },
     "350": {
       "cluster_0": {
-        "path_length": 6284771.125947,
-        "time_s": 122.4
+        "path_length": 6222837.318118,
+        "time_s": 122.54
       },
       "cluster_1": {
-        "path_length": 4251435.115005,
-        "time_s": 193.36
+        "path_length": 4255595.291491,
+        "time_s": 96.85
       },
       "cluster_2": {
-        "path_length": 8328481.118965,
-        "time_s": 220.63
+        "path_length": 8300830.249663,
+        "time_s": 99.79
       },
-      "total_path_length": 18864687.359918,
-      "total_time_s": 536.4
+      "total_path_length": 18779262.859272,
+      "total_time_s": 319.18
     },
     "400": {
       "cluster_0": {
-        "path_length": 6327551.334559,
-        "time_s": 269.48
+        "path_length": 6384290.959429,
+        "time_s": 122.26
       },
       "cluster_1": {
-        "path_length": 4749195.876353,
-        "time_s": 246.11
+        "path_length": 4267983.028341,
+        "time_s": 96.76
       },
       "cluster_2": {
-        "path_length": 8274385.814056,
-        "time_s": 220.74
+        "path_length": 8308797.042442,
+        "time_s": 99.79
       },
-      "total_path_length": 19351133.024968,
-      "total_time_s": 736.33
+      "total_path_length": 18961071.030212,
+      "total_time_s": 318.81
     }
   }
 }
