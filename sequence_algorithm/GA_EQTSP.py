@@ -28,7 +28,7 @@ class GA(object):
         self.ga_choose_ratio = 0.2
         self.mutate_ratio = 0.05
         self.Data_size = 300 # 数据量
-        self.THREHOLD = 1
+        self.THREHOLD = 3  # SINR 阈值 (dB)，低于此值认为通信不可用
         
         # 核心权重矩阵计算
         self.dis_mat_initial = self.compute_dis_mat_for_weight(num_city, data) # 初始物理距离矩阵
@@ -134,8 +134,13 @@ class GA(object):
         return dis_mat_ini
 
     def compute_weight_mec(self, num_city, Data_size, Throught, G2A_outage,
-                           g2a_threshold=0.3, g2a_penalty=1e6):
-        """综合权重矩阵：A2G 传输成本 + G2A 中断惩罚"""
+                           g2a_threshold=0.3, g2a_penalty=10.0):
+        """综合权重矩阵：A2G 传输成本 + G2A 中断惩罚
+
+        Args:
+            g2a_threshold: G2A 中断概率阈值，低于此值不惩罚
+            g2a_penalty: G2A 中断惩罚系数（降低以避免路径长度爆炸）
+        """
         matrix_weight = np.zeros([num_city, num_city])
         for i in range(num_city):
             for j in range(num_city):
@@ -145,15 +150,22 @@ class GA(object):
                 # A2G 传输成本
                 a2g_cost = Data_size / Throught[i][j]
                 # G2A 中断惩罚：超出阈值时施加额外代价
+                # 使用较小的惩罚系数，避免路径长度爆炸
                 g2a_pen = g2a_penalty * max(0, G2A_outage[i][j] - g2a_threshold)
                 matrix_weight[i][j] = a2g_cost + g2a_pen
         return matrix_weight
 
     def comput_thought(self, num_city, location):
-        distance = 0.0915  
-        DIST_TOLERANCE = 0.200 
+        """计算吞吐量矩阵：沿路径采样，累加有效数据速率
+
+        注意：get_date_rate() 返回 SINR (dB)，需要转换为线性尺度后计算数据速率
+        数据速率公式：R = B * log2(1 + 10^(SINR/10))，其中 B = 1 MHz
+        """
+        distance = 0.0915
+        DIST_TOLERANCE = 0.200
         next_loc = np.zeros(2)
-        throught_mat = np.zeros((num_city, num_city))  
+        throught_mat = np.zeros((num_city, num_city))
+        B = 1.0  # 带宽 1 MHz
 
         for i in range(num_city):
             for j in range(num_city):
@@ -164,34 +176,37 @@ class GA(object):
                 Phi = np.arctan((location[j][1] - location[i][1]) / (location[j][0] - location[i][0] + 1e-9))
                 Phi_deg = np.rad2deg(Phi)
 
-                if (location[j][1] >= location[i][1]) & (location[j][0] < location[i][0]):  
+                if (location[j][1] >= location[i][1]) & (location[j][0] < location[i][0]):
                     Phi_deg = 180 + Phi_deg
-                elif (location[j][1] < location[i][1]) & (location[j][0] < location[i][0]): 
+                elif (location[j][1] < location[i][1]) & (location[j][0] < location[i][0]):
                     Phi_deg = Phi_deg - 180
 
-                drec = np.deg2rad(Phi_deg)  
+                drec = np.deg2rad(Phi_deg)
                 currect_loc = location[i][0:2]
                 sum_data = 0
-                
-                # 为了防止死循环，设置探测步数限制
+
                 max_steps = 1000
                 step = 0
-                
+
                 while step < max_steps:
                     next_loc[0] = currect_loc[0] + np.cos(drec) * distance
                     next_loc[1] = currect_loc[1] + np.sin(drec) * distance
-                    sinr_n = self.get_date_rate(next_loc) 
-                    
-                    if sinr_n >= self.THREHOLD:
-                        sum_data += sinr_n
+                    sinr_db = self.get_date_rate(next_loc)
+
+                    # 将 SINR (dB) 转换为数据速率 (Mbps)
+                    # R = B * log2(1 + 10^(SINR/10))
+                    if sinr_db >= self.THREHOLD:
+                        sinr_linear = 10 ** (sinr_db / 10.0)
+                        rate = B * np.log2(1 + sinr_linear)
+                        sum_data += rate
 
                     if LA.norm(next_loc - location[j][0:2]) <= DIST_TOLERANCE:
                         break
                     else:
                         currect_loc = next_loc
                     step += 1
-                        
-                throught_mat[i][j] = min(self.Data_size, max(sum_data, 1e-5)) # 防止除以0
+
+                throught_mat[i][j] = min(self.Data_size, max(sum_data, 1e-5))  # 防止除以0
         return throught_mat
 
     def get_date_rate(self, location):
