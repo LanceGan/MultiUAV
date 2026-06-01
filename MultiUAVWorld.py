@@ -675,12 +675,12 @@ class MultiUAVWorld(object):
             # 通信奖励（仅对有活跃目标的 UAV 生效）
             if active_target:
                 # G2A 中断惩罚: 中断概率越高，惩罚越大
-                g2a_outage = self._get_g2a_outage(uav.x, uav.y)
+                g2a_outage = self._get_g2a_outage(uav_locations[i][0], uav_locations[i][1])
                 r_g2a = -self.comm_alpha * g2a_outage
                 reward += r_g2a
 
                 # A2G 速率奖励: 速率越高，奖励越大（归一化到 [0, 1]）
-                a2g_rate = self._get_a2g_rate(uav.x, uav.y)
+                a2g_rate = self._get_a2g_rate(uav_locations[i][0], uav_locations[i][1])
                 r_a2g = self.comm_beta * a2g_rate / max(self.a2g_max_rate, 1e-8)
                 reward += r_a2g
 
