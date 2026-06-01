@@ -20,7 +20,7 @@
           5,
           11
         ],
-        "time_s": 16.4
+        "time_s": 16.32
       },
       "cluster_1": {
         "path_length": 97.788348,
@@ -39,7 +39,7 @@
           7,
           11
         ],
-        "time_s": 14.53
+        "time_s": 16.25
       },
       "total_path_length": 237.56594
     },
@@ -61,28 +61,28 @@
           5,
           11
         ],
-        "time_s": 3.99
+        "time_s": 3.94
       },
       "cluster_1": {
-        "path_length": 103.343269,
+        "path_length": 97.788348,
         "num_nodes": 12,
         "best_indices": [
           0,
           6,
-          7,
-          8,
-          4,
-          3,
-          2,
-          1,
-          9,
-          10,
           5,
+          10,
+          9,
+          1,
+          2,
+          3,
+          4,
+          8,
+          7,
           11
         ],
-        "time_s": 4.0
+        "time_s": 3.91
       },
-      "total_path_length": 243.120861
+      "total_path_length": 237.56594
     },
     "ACO": {
       "cluster_0": {
@@ -102,7 +102,7 @@
           1,
           11
         ],
-        "time_s": 1.17
+        "time_s": 1.15
       },
       "cluster_1": {
         "path_length": 160.122544,
@@ -127,26 +127,26 @@
     },
     "GA_EQTSP": {
       "cluster_0": {
-        "path_length": 11412561.481658,
+        "path_length": 15966076.660274,
         "num_nodes": 12,
         "best_indices": [
           0,
           9,
-          5,
-          7,
-          10,
-          6,
-          8,
-          3,
-          4,
-          2,
           1,
+          2,
+          4,
+          3,
+          8,
+          6,
+          10,
+          7,
+          5,
           11
         ],
-        "time_s": 190.05
+        "time_s": 198.72
       },
       "cluster_1": {
-        "path_length": 12842179.525673,
+        "path_length": 12780554.64974,
         "num_nodes": 12,
         "best_indices": [
           0,
@@ -162,9 +162,9 @@
           6,
           11
         ],
-        "time_s": 117.08
+        "time_s": 115.7
       },
-      "total_path_length": 24254741.007331
+      "total_path_length": 28746631.310014
     }
   }
 }
