@@ -2,7 +2,7 @@
   "uav2": {
     "n_users": 20,
     "naive": {
-      "time_s": 0.001,
+      "time_s": 0.0,
       "inertia": null,
       "cluster_sizes": [
         10.0,
@@ -13,7 +13,7 @@
       "max_min_ratio": 1.0
     },
     "4d": {
-      "time_s": 0.102,
+      "time_s": 0.095,
       "inertia": 3.239619,
       "cluster_sizes": [
         10.0,
@@ -39,7 +39,7 @@
       "max_min_ratio": 1.0
     },
     "4d": {
-      "time_s": 0.146,
+      "time_s": 0.144,
       "inertia": 2.998312,
       "cluster_sizes": [
         10.0,
@@ -67,7 +67,7 @@
       "max_min_ratio": 1.0
     },
     "4d": {
-      "time_s": 0.196,
+      "time_s": 0.187,
       "inertia": 3.968688,
       "cluster_sizes": [
         10.0,
