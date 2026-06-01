@@ -31,72 +31,43 @@ max_dist = np.sqrt(self.length ** 2 + self.width ** 2) + 1e-8
 
 ### 🟡 中等问题 (Medium)
 
-#### 问题 2: `_get_a2g_rate` 返回 SINR 而非数据速率
+#### 问题 2: `_get_a2g_rate` 返回 SINR 而非数据速率 ✅ 已修复
 
 **文件**: `MultiUAVWorld.py:575-585`
 **问题**: `A2G.getPointDateRate()` 实际返回的是最大 SINR (dB)，而不是数据速率 (Mbps)。函数名和注释都说是"数据速率"，但实际返回的是 SINR。
 **影响**: 通信奖励中的 A2G 速率奖励语义不正确，归一化可能无意义
-**代码**:
+**修复状态**: ✅ 已修复 - 使用公式 `R = B * log2(1 + 10^(SINR/10))` 将 SINR 转换为数据速率
+**修复代码**:
 ```python
-def _get_a2g_rate(self, x, y):
-    """获取位置 (x, y) 处的 A2G 数据速率 (SINR)。坐标单位: 100m。"""
-    ...
-    rate = A2G.getPointDateRate(loc_km)
-    return float(rate)  # 实际返回的是 SINR (dB)
+sinr_db = A2G.getPointDateRate(loc_km)  # 实际返回 SINR (dB)
+rate_mbps = self.BandWidth * np.log2(1 + 10 ** (float(sinr_db) / 10.0))
 ```
-**修复建议**: 
-1. 将函数名改为 `_get_a2g_sinr` 或在注释中明确说明返回的是 SINR
-2. 如果需要真正的数据速率，应使用公式 `R = B * log2(1 + 10^(SINR/10))` 转换
 
 ---
 
-#### 问题 3: `getPointDateRate` 返回标量而非数组
+#### 问题 3: `getPointDateRate` 返回标量而非数组 ✅ 已规避
 
 **文件**: `radio_map_A2G.py:314`
 **问题**: `getPointDateRate()` 函数在循环后只返回最后一次迭代的 `MaxSINR` 标量，而不是所有点的 SINR 数组。这意味着传入多个位置时，只能获取最后一个位置的结果。
-**影响**: `__init__` 中的 `a2g_max_rate` 计算可能不正确（`np.max()` 作用于标量是多余的）
-**代码**:
-```python
-# radio_map_A2G.py line 314
-return MaxSINR  # 只返回最后一个值，不是数组
-```
-**修复建议**: 这是 radio_map_A2G.py 的 bug，应该返回 `Out_SINR_vec` 而不是 `MaxSINR`。但作为临时解决方案，可以在 `_get_a2g_rate` 中接受这个限制。
+**影响**: 这是会议论文代码的遗留问题，但不影响当前使用
+**规避方案**: 在 `a2g_max_rate` 计算中改为逐点查询，避免依赖数组返回值
 
 ---
 
-#### 问题 4: `_assign_next_target` 在序列模式下未检查目标所有权
+#### ~~问题 4: `_assign_next_target` 在序列模式下未检查目标所有权~~ ❌ 非问题
 
 **文件**: `MultiUAVWorld.py:475-480`
-**问题**: 在序列模式下，函数直接分配 `remaining_targets[0]`，但没有检查该目标是否已被其他 UAV 占用。虽然有 `target_owner` 检查，但如果目标已被占用，UAV 会进入 `WAIT_TARGET` 状态，但没有明确的重试机制。
-**影响**: 可能导致 UAV 长时间等待，降低任务完成效率
-**代码**:
-```python
-if remaining_targets:
-    next_target = remaining_targets[0]
-    owner = self.target_owner.get(next_target)
-    if owner is None or owner == uav_id:
-        self.uav_targets[uav_id] = next_target
-        self.target_owner[next_target] = uav_id
-        self.assigned_time[next_target] = self.t
-    else:
-        self.uav_targets[uav_id] = self.WAIT_TARGET
-```
-**修复建议**: 考虑添加跳过已占用目标的逻辑，或在 `_reclaim_stale_assignments` 中更积极地回收
+**说明**: 序列模式下，每个无人机的待巡检点已预先分配好（通过聚类算法），各无人机之间的巡检点相互独立，不存在冲突。因此 `target_owner` 检查在此模式下是冗余的保护，不会导致实际问题。
 
 ---
 
 ### 🟢 低等问题 (Low)
 
-#### 问题 5: `a2g_max_rate` 计算使用随机采样
+#### 问题 5: `a2g_max_rate` 计算使用随机采样 ✅ 已修复
 
 **文件**: `MultiUAVWorld.py:96-105`
-**问题**: 使用 `np.random.uniform` 随机采样 100 个位置来计算最大 A2G 速率。这可能导致：
-1. 不同运行之间结果不一致（未设置随机种子）
-2. 可能错过真正的最大值位置
-**影响**: 归一化因子可能不稳定，导致奖励值在不同运行间有差异
-**修复建议**: 
-1. 设置固定的随机种子
-2. 或使用网格采样代替随机采样
+**问题**: 使用 `np.random.uniform` 随机采样位置来计算最大 A2G 速率，可能导致结果不一致。
+**修复状态**: ✅ 已修复 - 设置固定随机种子 `np.random.seed(42)`，并改为逐点查询以规避问题 3
 
 ---
 
@@ -146,9 +117,12 @@ if remaining_targets:
 
 ## 修复建议优先级
 
-1. **立即修复**: 问题 1 (`self.max_x` 属性缺失) - 会导致运行时崩溃
-2. **尽快修复**: 问题 2-4 (SINR vs 数据速率、标量返回、目标分配) - 影响算法正确性
-3. **计划修复**: 问题 5-8 (随机采样、性能、代码重复、边界假设) - 影响代码质量
+1. ✅ 已修复: 问题 1 (`self.max_x` 属性缺失) - 会导致运行时崩溃
+2. ✅ 已修复: 问题 2 (SINR vs 数据速率) - 应用转换公式
+3. ✅ 已规避: 问题 3 (标量返回) - 改为逐点查询
+4. ❌ 非问题: 问题 4 (目标分配) - 序列模式下各无人机独立
+5. ✅ 已修复: 问题 5 (随机采样) - 设置固定随机种子
+6. **计划修复**: 问题 6-8 (性能、代码重复、边界假设) - 影响代码质量
 
 ---
 

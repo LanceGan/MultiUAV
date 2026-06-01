@@ -93,16 +93,21 @@ class MultiUAVWorld(object):
         self.HeightMapMatrix = self.urban_world.Buliding_construct()
 
         # 预计算最大 A2G 速率用于归一化
+        # 注意: getPointDateRate() 返回 SINR (dB)，需要转换为数据速率
         area_km = self.length / 10.0
-        sample_locs = np.zeros((100, 3))
-        sample_locs[:, 0] = np.random.uniform(0, area_km, 100)
-        sample_locs[:, 1] = np.random.uniform(0, area_km, 100)
-        sample_locs[:, 2] = self.uav_h / 10
-        try:
-            rates = A2G.getPointDateRate(sample_locs)
-            self.a2g_max_rate = float(np.max(rates))
-        except Exception:
-            self.a2g_max_rate = 1.0
+        np.random.seed(42)  # 固定随机种子，确保可复现
+        sample_x = np.random.uniform(0, area_km, 20)
+        sample_y = np.random.uniform(0, area_km, 20)
+        max_rate = 0.0
+        for sx, sy in zip(sample_x, sample_y):
+            loc_km = np.array([[sx, sy, self.uav_h / 10]])
+            try:
+                sinr_db = A2G.getPointDateRate(loc_km)
+                rate_mbps = self.BandWidth * np.log2(1 + 10 ** (float(sinr_db) / 10.0))
+                max_rate = max(max_rate, rate_mbps)
+            except Exception:
+                pass
+        self.a2g_max_rate = max_rate if max_rate > 0 else 1.0
         
         # 🔥 多无人机任务分配
         self.uav_targets = [None for _ in range(self.uav_num)]   # 每个无人机的当前目标
@@ -547,14 +552,21 @@ class MultiUAVWorld(object):
             return 0.0
 
     def _get_a2g_rate(self, x, y):
-        """获取位置 (x, y) 处的 A2G 数据速率 (SINR)。坐标单位: 100m。"""
+        """获取位置 (x, y) 处的 A2G 数据速率 (Mbps)。坐标单位: 100m。
+
+        注意: A2G.getPointDateRate() 实际返回的是最大 SINR (dB)，
+        这里使用公式 R = B * log2(1 + 10^(SINR/10)) 转换为数据速率。
+        """
         loc_km = np.zeros((1, 3))
         loc_km[0, 0] = x / 10
         loc_km[0, 1] = y / 10
         loc_km[0, 2] = self.uav_h / 10
         try:
-            rate = A2G.getPointDateRate(loc_km)
-            return float(rate)
+            sinr_db = A2G.getPointDateRate(loc_km)  # 实际返回 SINR (dB)
+            # 转换为数据速率: R = B * log2(1 + 10^(SINR/10))
+            # B = 1 MHz (BandWidth), SINR 单位为 dB
+            rate_mbps = self.BandWidth * np.log2(1 + 10 ** (float(sinr_db) / 10.0))
+            return rate_mbps
         except Exception:
             return 0.0
 
