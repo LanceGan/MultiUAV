@@ -2,13 +2,33 @@
 
 ## 审查信息
 
-- **审查时间**: 2026-05-31
-- **审查范围**: 分支 `version_1` 最近 5 次提交的变更
-- **审查文件**: MultiUAVWorld.py, scenario_config.py, sequence_algorithm/GA_EQTSP.py, run_paper_experiments.py, run_sensitivity_analysis.py, generate_paper_figures.py, baselines.py
+- **审查时间**: 2026-05-31 (第二次审查)
+- **审查范围**: 分支 `version_1` 最近 3 次提交的变更
+- **审查文件**: MultiUAVWorld.py, RECORD.md
 
 ---
 
-## 发现的问题
+## 第二次审查发现的问题
+
+### 🟡 中等问题 (Medium)
+
+#### 问题 10: `np.random.seed(42)` 影响全局随机状态
+
+**文件**: `MultiUAVWorld.py:98`
+**问题**: 在 `__init__` 中使用 `np.random.seed(42)` 设置全局随机种子，这会影响整个程序的随机数序列，可能导致：
+1. 其他依赖 `np.random` 的代码行为不可预测
+2. 多个 `MultiUAVWorld` 实例之间的随机数相互干扰
+**影响**: 降低代码的可预测性和可测试性
+**修复建议**: 使用局部随机状态：
+```python
+rng = np.random.RandomState(42)
+sample_x = rng.uniform(0, area_km, 20)
+sample_y = rng.uniform(0, area_km, 20)
+```
+
+---
+
+## 第一次审查发现的问题
 
 ### 🔴 严重问题 (Critical)
 
@@ -103,16 +123,16 @@ rate_mbps = self.BandWidth * np.log2(1 + 10 ** (float(sinr_db) / 10.0))
 
 | 提交哈希 | 提交信息 | 日期 |
 |---------|---------|------|
+| `f7c5167` | docs: update RECORD.md with NameError fix | 2026-05-31 |
+| `c429b13` | fix: use uav_locations[i] instead of undefined uav variable in communication reward | 2026-05-31 |
+| `65367c6` | fix: convert SINR to data rate using R=B*log2(1+10^(SINR/10)) and update RECORD.md | 2026-05-31 |
+| `4a0777d` | fix: critical AttributeError in _get_local_observation and add code review record | 2026-05-31 |
 | `50b1da8` | fix: correct sensitivity data path in figure generator | 2026-05-31 |
 | `361634b` | feat: add all experiment results with dual radio map GA_EQTSP | 2026-05-31 |
 | `bbf4da4` | feat: add multi-data-volume and sensitivity figure generation | 2026-05-31 |
 | `d33b555` | feat: add multi-data-volume and sensitivity analysis experiments | 2026-05-31 |
 | `4dee1df` | feat: add communication rewards (G2A penalty + A2G reward) to MA-TD3 | 2026-05-31 |
 | `a5b8013` | feat: extend GA_EQTSP with dual radio map awareness (G2A + A2G) | 2026-05-31 |
-| `abb1d34` | feat: add 5 missing paper figures | 2026-05-31 |
-| `e145ffc` | feat: add paper experiment runner | 2026-05-31 |
-| `d1f3a35` | feat: add paper figure generator | 2026-05-31 |
-| `20304ed` | feat: add baseline schemes (naive K-means, GA wrappers) | 2026-05-31 |
 
 ---
 
