@@ -20,7 +20,7 @@
           5,
           11
         ],
-        "time_s": 16.18
+        "time_s": 15.19
       },
       "cluster_1": {
         "path_length": 69.939544,
@@ -39,7 +39,7 @@
           5,
           11
         ],
-        "time_s": 16.27
+        "time_s": 16.39
       },
       "cluster_2": {
         "path_length": 87.146639,
@@ -58,7 +58,7 @@
           9,
           11
         ],
-        "time_s": 16.26
+        "time_s": 16.31
       },
       "cluster_3": {
         "path_length": 101.014922,
@@ -77,7 +77,7 @@
           10,
           11
         ],
-        "time_s": 16.29
+        "time_s": 16.38
       },
       "total_path_length": 347.790755
     },
@@ -99,7 +99,7 @@
           5,
           11
         ],
-        "time_s": 3.93
+        "time_s": 3.95
       },
       "cluster_1": {
         "path_length": 66.215105,
@@ -118,7 +118,7 @@
           8,
           11
         ],
-        "time_s": 3.96
+        "time_s": 3.91
       },
       "cluster_2": {
         "path_length": 87.146639,
@@ -137,7 +137,7 @@
           9,
           11
         ],
-        "time_s": 3.91
+        "time_s": 3.92
       },
       "cluster_3": {
         "path_length": 101.014922,
@@ -156,7 +156,7 @@
           10,
           11
         ],
-        "time_s": 3.9
+        "time_s": 3.93
       },
       "total_path_length": 344.066316
     },
@@ -178,7 +178,7 @@
           1,
           11
         ],
-        "time_s": 1.14
+        "time_s": 1.15
       },
       "cluster_1": {
         "path_length": 118.901107,
@@ -197,7 +197,7 @@
           1,
           11
         ],
-        "time_s": 1.16
+        "time_s": 1.14
       },
       "cluster_2": {
         "path_length": 135.420825,
@@ -216,7 +216,7 @@
           1,
           11
         ],
-        "time_s": 1.14
+        "time_s": 1.16
       },
       "cluster_3": {
         "path_length": 159.815419,
@@ -241,7 +241,7 @@
     },
     "GA_EQTSP": {
       "cluster_0": {
-        "path_length": 10035284.795036,
+        "path_length": 285.52092,
         "num_nodes": 12,
         "best_indices": [
           0,
@@ -253,33 +253,33 @@
           1,
           6,
           8,
-          10,
           9,
+          10,
           11
         ],
-        "time_s": 108.66
+        "time_s": 109.44
       },
       "cluster_1": {
-        "path_length": 5161990.53897,
+        "path_length": 152.148409,
         "num_nodes": 12,
         "best_indices": [
           0,
-          2,
-          6,
+          1,
+          5,
+          4,
+          8,
+          9,
           3,
           10,
-          9,
-          8,
-          4,
           7,
-          5,
-          1,
+          6,
+          2,
           11
         ],
-        "time_s": 120.93
+        "time_s": 87.14
       },
       "cluster_2": {
-        "path_length": 5735371.242637,
+        "path_length": 184.043016,
         "num_nodes": 12,
         "best_indices": [
           0,
@@ -295,28 +295,28 @@
           9,
           11
         ],
-        "time_s": 104.77
+        "time_s": 107.29
       },
       "cluster_3": {
-        "path_length": 11583628.263664,
+        "path_length": 217.951765,
         "num_nodes": 12,
         "best_indices": [
           0,
           3,
-          2,
-          4,
           7,
+          4,
+          2,
+          1,
+          9,
+          6,
           5,
           10,
           8,
-          6,
-          9,
-          1,
           11
         ],
-        "time_s": 111.54
+        "time_s": 109.65
       },
-      "total_path_length": 32516274.840307
+      "total_path_length": 839.66411
     }
   }
 }

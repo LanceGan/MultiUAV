@@ -16,7 +16,7 @@
       2,
       11
     ],
-    "time_s": 3.95
+    "time_s": 3.93
   },
   "cluster_1": {
     "path_length": 79.157303,
@@ -35,7 +35,7 @@
       2,
       11
     ],
-    "time_s": 3.92
+    "time_s": 3.9
   },
   "cluster_2": {
     "path_length": 95.083882,
@@ -54,7 +54,7 @@
       8,
       11
     ],
-    "time_s": 3.93
+    "time_s": 3.92
   },
   "total_path_length": 281.885377
 }
