@@ -13,6 +13,8 @@ import os
 from torch.utils.tensorboard import SummaryWriter
 import argparse
 from collections import deque
+from utils import wrap_angle, heuristic_action, refine_action, mkdir
+from scenario_config import get_scenario
 
 
 def create_parser():
@@ -126,13 +128,6 @@ class AdaptiveExploration:
         self.last_avg_reward = None
 
 
-def mkdir(path):
-    """创建目录"""
-    folder = os.path.exists(path)
-    if not folder:
-        os.makedirs(path)
-
-
 def get_moving_average(mylist, N):
     """计算移动平均"""
     if len(mylist) < N:
@@ -152,83 +147,13 @@ def use_scenario_default(current_value, default_value, scenario_value):
 
 
 # ==================== 主训练函数 ====================
-def wrap_angle(angle):
-    return (angle + np.pi) % (2 * np.pi) - np.pi
 
-
-def refine_training_action(
-    raw_action,
-    heuristic,
-    prev_action,
-    dist_to_target,
-    dist_max,
-    guidance_radius,
-    near_target_radius,
-    max_turn_rate,
-    same_target=True,
-    stagnation_steps=0,
-):
-    raw_phi = float(raw_action[0])
-    raw_step = float(raw_action[1])
-    heuristic_phi = float(heuristic[0])
-    heuristic_step = float(heuristic[1])
-    heading_deadband = np.deg2rad(3.0 if dist_to_target < guidance_radius else 6.0)
-    anti_zigzag_band = np.deg2rad(10.0 if dist_to_target < guidance_radius else 16.0)
-
-    if not same_target:
-        blend = 0.9
-    elif dist_to_target < near_target_radius:
-        blend = 0.7
-    elif dist_to_target < guidance_radius:
-        blend = 0.3
-    else:
-        blend = 0.1
-
-    angle_error = abs(wrap_angle(raw_phi - heuristic_phi))
-    if angle_error > np.deg2rad(90):
-        blend = max(blend, 0.8)
-    elif angle_error > np.deg2rad(45):
-        blend = max(blend, 0.5)
-    if stagnation_steps >= 2:
-        blend = max(blend, 0.85)
-
-    desired_heading_delta = wrap_angle(heuristic_phi - raw_phi)
-    if abs(desired_heading_delta) < heading_deadband:
-        refined_phi = heuristic_phi
-    else:
-        refined_phi = wrap_angle(raw_phi + blend * desired_heading_delta)
-    refined_step = (1.0 - blend) * raw_step + blend * heuristic_step
-
-    if dist_to_target > guidance_radius:
-        cruise_step = min(dist_max, max(0.65 * heuristic_step, 0.55 * dist_max))
-        refined_step = max(refined_step, cruise_step)
-    elif dist_to_target < guidance_radius:
-        refined_step = min(refined_step, min(dist_max, max(dist_to_target * 0.8, 0.03)))
-
-    if prev_action is not None and same_target:
-        prev_phi = float(prev_action[0])
-        prev_step = float(prev_action[1])
-        prev_heading_err = wrap_angle(prev_phi - heuristic_phi)
-        phi_delta = wrap_angle(refined_phi - prev_phi)
-        if abs(prev_heading_err) < anti_zigzag_band and abs(phi_delta) < anti_zigzag_band:
-            candidate_phi = wrap_angle(prev_phi + 0.5 * phi_delta)
-            candidate_err = wrap_angle(candidate_phi - heuristic_phi)
-            if prev_heading_err * candidate_err < 0:
-                refined_phi = heuristic_phi
-            else:
-                refined_phi = candidate_phi
-            phi_delta = wrap_angle(refined_phi - prev_phi)
-        phi_delta = float(np.clip(phi_delta, -max_turn_rate, max_turn_rate))
-        refined_phi = wrap_angle(prev_phi + phi_delta)
-        heading_err_after = wrap_angle(refined_phi - heuristic_phi)
-        if prev_heading_err * heading_err_after < 0 and abs(prev_heading_err) < anti_zigzag_band:
-            refined_phi = heuristic_phi
-        if abs(wrap_angle(refined_phi - heuristic_phi)) < heading_deadband:
-            refined_phi = heuristic_phi
-        refined_step = 0.6 * prev_step + 0.4 * refined_step
-
-    refined_step = float(np.clip(refined_step, 0.0, dist_max))
-    return np.array([refined_phi, refined_step], dtype=np.float32)
+# 训练侧 refine_action 的参数（比测试侧更保守）
+TRAIN_REFINE_PARAMS = dict(
+    blend_new=0.9, blend_near=0.7, blend_guidance=0.3, blend_far=0.1,
+    blend_angle_90=0.8, blend_angle_45=0.5, blend_stagnation=0.85,
+    cruise_scale=0.65, cruise_min=0.55, prev_blend=0.6,
+)
 
 
 def main():
@@ -289,56 +214,16 @@ def main():
     max_action = np.array([math.pi, dist_max])
     min_action = np.array([-math.pi, 0])
     
-    # 巡检序列文件路径
-    sequence_path = None
-    # sequence_algorithm = model_subdir if model_subdir else ("Ours","GA","PSO")[0]
-    
-    if assignment_mode not in ("sequence", "hybrid", "dynamic"):
-        raise ValueError(f"不支持的 assignment_mode: {assignment_mode}")
-
-    if uav_num == 2:
-        user_num = 20
-        Length = 40
-        Width = 40
-        # sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        if assignment_mode in ("sequence", "hybrid"):
-            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        ini_loc = [14.76, 14.83]
-        end_loc = [27.62, 23.47]
-        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
-                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
-    elif uav_num == 3:
-        # 5kmx5km area,30 users, 3 UAVs
-        user_num = 30
-        Length = 40
-        Width = 40
-        # sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        if assignment_mode in ("sequence", "hybrid"):
-            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        ini_loc = [14.76, 14.83]
-        end_loc = [27.62, 23.47]
-        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
-                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
-        # ini_loc = [32.88, 22.67]
-        # end_loc = [21.62, 48.47]
-        # BS_loc=np.array([[1.879, 1.034, 0.025],[3.373, 1.031, 0.025],[0.929, 2.545, 0.025],
-        #                 [2.501, 2.545, 0.025],[4.059, 2.545, 0.025],[1.888, 4.060, 0.025],[3.378, 4.060, 0.025]])
-    elif uav_num == 4:
-        # 6kmx6km area,40 users, 4 UAVs
-        user_num = 40
-        Length = 40
-        Width = 40
-        # sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        if assignment_mode in ("sequence", "hybrid"):
-            sequence_path = './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_GAEQTSP_%d.npz' % (user_num, uav_num)
-        ini_loc = [14.76, 14.83]
-        end_loc = [27.62, 23.47]
-        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
-                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
-        # ini_loc = [34.12, 28.79]
-        # end_loc = [38.46, 45.23]
-        # BS_loc=np.array([[2.255, 1.241, 0.025],[4.047, 1.238, 0.025],[1.115, 3.054, 0.025],
-        #                  [3.002, 3.054, 0.025],[4.871, 3.054, 0.025],[2.265, 4.872, 0.025],[4.053, 4.872, 0.025]])
+    # 场景配置
+    cfg = get_scenario(uav_num, assignment_mode, sequence_algorithm='GAEQTSP')
+    user_num = cfg['user_num']
+    Length = cfg['length']
+    Width = cfg['width']
+    data_size = cfg['data_size']
+    sequence_path = cfg['sequence_path']
+    ini_loc = cfg['ini_loc']
+    end_loc = cfg['end_loc']
+    BS_loc = cfg['BS_loc']
 
     # 固定序列的 3/4 机训练更容易被探索噪声拉偏，这里仅在“保持默认参数”时增强稳定性。
     if assignment_mode == "sequence":
@@ -492,14 +377,6 @@ def main():
     
     print("开始训练...\n")
     # ------------------ 一次性 Warmup（只在训练开始时执行） ------------------
-    def heuristic_action(uav_pos, target_pos, dist_max):
-        vec = target_pos - uav_pos
-        dist = np.linalg.norm(vec)
-        if dist < 1e-6:
-            return np.array([0.0, 0.0])
-        phi = np.arctan2(vec[1], vec[0])
-        step = min(dist, dist_max)
-        return np.array([phi, step])
 
     def build_heuristic_actions(world, close_step_scale=1.0):
         actions = []
@@ -648,7 +525,7 @@ def main():
                         prev_distances[i] = None
                         stagnation_counts[i] = 0
 
-                    actions[i] = refine_training_action(
+                    actions[i] = refine_action(
                         actions[i],
                         heuristic_actions[i],
                         prev_actions[i],
@@ -659,6 +536,7 @@ def main():
                         train_max_turn_rate,
                         same_target=same_target,
                         stagnation_steps=stagnation_counts[i],
+                        **TRAIN_REFINE_PARAMS,
                     )
 
                     prev_targets[i] = track_key
@@ -714,8 +592,7 @@ def main():
  
             episode_reward += np.sum(rewards)
             obs_list = next_obs_list
-            # done = all_done
-            
+
             # 记录所有UAV位置
             for i, uav in enumerate(world.UAVs):
                 x_uav[episode][step_count][i] = uav.x
@@ -727,7 +604,6 @@ def main():
         
         # 回合结束统计
         ep_rewards.append(episode_reward)
-        # ep_collision.append(1 if info.get('collision', False) else 0)
         completed_targets = info.get('completed_targets', 0)
         episode_success = 1 if completed_targets >= user_num else 0
         stable_success_history.append(episode_success)

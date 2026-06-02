@@ -683,10 +683,19 @@ def generate_multi_data_trajectory_figure():
     if os.path.isfile(summary_file):
         with open(summary_file) as f:
             summary = json.load(f)
-        for entry in summary.get('experiments', []):
-            data_size = entry['data_size_mb']
-            routes = entry.get('routes', {})
-            _plot_trajectory_from_routes(routes, data_size)
+        # Support both 'experiments' list and 'data_sizes' dict formats
+        if 'experiments' in summary:
+            for entry in summary['experiments']:
+                data_size = entry['data_size_mb']
+                routes = entry.get('routes', {})
+                _plot_trajectory_from_routes(routes, data_size)
+        elif 'data_sizes' in summary:
+            for data_size, routes in sorted(summary['data_sizes'].items(),
+                                            key=lambda x: int(x[0])):
+                # Filter to only cluster entries for trajectory plotting
+                cluster_routes = {k: v for k, v in routes.items()
+                                  if k.startswith('cluster_')}
+                _plot_trajectory_from_routes(cluster_routes, data_size)
     else:
         # Group files by data size
         from collections import defaultdict

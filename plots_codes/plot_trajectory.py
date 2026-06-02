@@ -88,7 +88,7 @@ def draw_radio_map(radio_map):
         return True
 
     if radio_map == "G2A":
-        npzfile = np.load("results/datas/radiomap/Radio_datas.npz")
+        npzfile = np.load("results/datas/radiomap/Radio_datas_G2A.npz")
         value = 1 - npzfile["arr_0"]
         x_vec = npzfile["arr_2"]
         y_vec = npzfile["arr_3"]

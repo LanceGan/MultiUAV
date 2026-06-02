@@ -10,44 +10,24 @@ import os
 import matplotlib.pyplot as plt
 from MATD3 import MATD3
 from MultiUAVWorld import MultiUAVWorld
+from utils import wrap_angle, heuristic_action, refine_action, mkdir
+from scenario_config import get_scenario
 
 
 TRAJECTORY_PROFILES = {
-    'smooth': {
-        'guidance_radius': 7.0,
-        'near_target_radius': 2.2,
-        'max_turn_deg': 16.0,
-    },
-    'balanced': {
-        'guidance_radius': 4.5,
-        'near_target_radius': 1.5,
-        'max_turn_deg': 26.0,
-    },
-    'agile': {
-        'guidance_radius': 3.0,
-        'near_target_radius': 1.0,
-        'max_turn_deg': 35.0,
-    },
+    'smooth': {'guidance_radius': 7.0, 'near_target_radius': 2.2, 'max_turn_deg': 16.0},
+    'balanced': {'guidance_radius': 4.5, 'near_target_radius': 1.5, 'max_turn_deg': 26.0},
+    'agile': {'guidance_radius': 3.0, 'near_target_radius': 1.0, 'max_turn_deg': 35.0},
 }
-
-
-def mkdir(path):
-    """创建目录"""
-    folder = os.path.exists(path)
-    if not folder:
-        os.makedirs(path)
 
 
 def resolve_model_episode(model_episode, model_path):
     """解析要加载的模型版本。"""
     if model_episode != 'auto':
         return model_episode
-
     for candidate in ['stable', 'best', 'final']:
-        critic_path = os.path.join(model_path, f'matd3_critic_ep{candidate}.pth')
-        if os.path.exists(critic_path):
+        if os.path.exists(os.path.join(model_path, f'matd3_critic_ep{candidate}.pth')):
             return candidate
-
     return 'final'
 
 
@@ -64,108 +44,13 @@ def has_model_files(model_path):
 def resolve_trajectory_profile(profile_name, guidance_radius, near_target_radius, max_turn_deg):
     """解析轨迹后处理配置，支持预设档位和手动覆盖。"""
     profile = dict(TRAJECTORY_PROFILES.get(profile_name, TRAJECTORY_PROFILES['smooth']))
-
     if guidance_radius is not None:
         profile['guidance_radius'] = guidance_radius
     if near_target_radius is not None:
         profile['near_target_radius'] = near_target_radius
     if max_turn_deg is not None:
         profile['max_turn_deg'] = max_turn_deg
-
     return profile
-
-
-def wrap_angle(angle):
-    """将角度归一化到 [-pi, pi]。"""
-    return (angle + np.pi) % (2 * np.pi) - np.pi
-
-
-def heuristic_action(uav_pos, target_pos, dist_max):
-    """几何启发式动作。"""
-    vec = target_pos - uav_pos
-    dist = np.linalg.norm(vec)
-    if dist < 1e-8:
-        return np.array([0.0, 0.0], dtype=np.float32)
-    phi = np.arctan2(vec[1], vec[0])
-    step = min(dist, dist_max)
-    return np.array([phi, step], dtype=np.float32)
-
-
-def refine_action(
-    raw_action,
-    heuristic,
-    prev_action,
-    dist_to_target,
-    dist_max,
-    guidance_radius,
-    near_target_radius,
-    max_turn_rate,
-    same_target=True,
-    stagnation_steps=0,
-):
-    """对策略动作做轻量后处理，让轨迹更平滑、少绕路。"""
-    raw_phi = float(raw_action[0])
-    raw_step = float(raw_action[1])
-    heuristic_phi = float(heuristic[0])
-    heuristic_step = float(heuristic[1])
-    heading_deadband = np.deg2rad(3.0 if dist_to_target < guidance_radius else 6.0)
-    anti_zigzag_band = np.deg2rad(10.0 if dist_to_target < guidance_radius else 16.0)
-
-    if not same_target:
-        blend = 0.92
-    elif dist_to_target < near_target_radius:
-        blend = 0.75
-    elif dist_to_target < guidance_radius:
-        blend = 0.35
-    else:
-        blend = 0.12
-
-    angle_error = abs(wrap_angle(raw_phi - heuristic_phi))
-    if angle_error > np.deg2rad(90):
-        blend = max(blend, 0.85)
-    elif angle_error > np.deg2rad(45):
-        blend = max(blend, 0.55)
-    if stagnation_steps >= 2:
-        blend = max(blend, 0.9)
-
-    desired_heading_delta = wrap_angle(heuristic_phi - raw_phi)
-    if abs(desired_heading_delta) < heading_deadband:
-        refined_phi = heuristic_phi
-    else:
-        refined_phi = wrap_angle(raw_phi + blend * desired_heading_delta)
-    refined_step = (1.0 - blend) * raw_step + blend * heuristic_step
-
-    if dist_to_target > guidance_radius:
-        cruise_step = min(dist_max, max(0.75 * heuristic_step, 0.65 * dist_max))
-        refined_step = max(refined_step, cruise_step)
-    elif dist_to_target < guidance_radius:
-        max_step_near = min(dist_max, max(dist_to_target * 0.8, 0.03))
-        refined_step = min(refined_step, max_step_near)
-
-    if prev_action is not None and same_target:
-        prev_phi = float(prev_action[0])
-        prev_step = float(prev_action[1])
-        prev_heading_err = wrap_angle(prev_phi - heuristic_phi)
-        phi_delta = wrap_angle(refined_phi - prev_phi)
-        if abs(prev_heading_err) < anti_zigzag_band and abs(phi_delta) < anti_zigzag_band:
-            candidate_phi = wrap_angle(prev_phi + 0.5 * phi_delta)
-            candidate_err = wrap_angle(candidate_phi - heuristic_phi)
-            if prev_heading_err * candidate_err < 0:
-                refined_phi = heuristic_phi
-            else:
-                refined_phi = candidate_phi
-            phi_delta = wrap_angle(refined_phi - prev_phi)
-        phi_delta = float(np.clip(phi_delta, -max_turn_rate, max_turn_rate))
-        refined_phi = wrap_angle(prev_phi + phi_delta)
-        heading_err_after = wrap_angle(refined_phi - heuristic_phi)
-        if prev_heading_err * heading_err_after < 0 and abs(prev_heading_err) < anti_zigzag_band:
-            refined_phi = heuristic_phi
-        if abs(wrap_angle(refined_phi - heuristic_phi)) < heading_deadband:
-            refined_phi = heuristic_phi
-        refined_step = 0.65 * prev_step + 0.35 * refined_step
-
-    refined_step = float(np.clip(refined_step, 0.0, dist_max))
-    return np.array([refined_phi, refined_step], dtype=np.float32)
 
 
 def get_effective_traj_end(x_series, y_series, t, move_eps=1e-6):
@@ -346,7 +231,6 @@ def test_matd3_model(
     
     max_action = np.array([math.pi, dist_max])
     min_action = np.array([-math.pi, 0])
-    data_size = 300
     
     # 根据无人机数量动态配置场景参数
     assignment_mode = str(assignment_mode).strip().lower()
@@ -358,38 +242,15 @@ def test_matd3_model(
         print(f"[提示] random_layout=True 时固定序列无意义，自动切换 assignment_mode: {assignment_mode} -> dynamic")
         assignment_mode = 'dynamic'
 
-    if uav_num == 2:
-        user_num = 20
-        Length = 40
-        Width = 40
-        # sequence_path = './results/datas/sequence/Users_20_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
-        sequence_path = None if assignment_mode == 'dynamic' else './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
-        ini_loc = [14.76, 14.83]
-        end_loc = [27.62, 23.47]
-        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
-                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
-    elif uav_num == 3:
-        user_num = 30
-        Length = 40
-        Width = 40
-        # sequence_path = './results/datas/sequence/Users_30_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
-        sequence_path = None if assignment_mode == 'dynamic' else './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
-        ini_loc = [14.76, 14.83]
-        end_loc = [27.62, 23.47]
-        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
-                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
-    elif uav_num == 4:
-        user_num = 40
-        Length = 40
-        Width = 40
-        # sequence_path = './results/datas/sequence/Users_40_Clusteredsave_path_PathUAV_PSO_%d.npz' % uav_num
-        sequence_path = None if assignment_mode == 'dynamic' else './results/datas/sequence/Users_%d_Clusteredsave_path_PathUAV_PSO_%d.npz' % (user_num, uav_num)
-        ini_loc = [14.76, 14.83]
-        end_loc = [27.62, 23.47]
-        BS_loc=np.array([[15.03,8.27,0.25],[26.98,8.25,0.25],[7.43,20.36,0.25],
-                        [20.01,20.36,0.25],[32.47,20.36,0.25],[15.10,32.48,0.25],[27.02,32.48,0.25]]) 
-    else:
-        raise ValueError("不支持的无人机数量！")
+    cfg = get_scenario(uav_num, assignment_mode, sequence_algorithm='PSO')
+    user_num = cfg['user_num']
+    Length = cfg['length']
+    Width = cfg['width']
+    data_size = cfg['data_size']
+    sequence_path = cfg['sequence_path']
+    ini_loc = cfg['ini_loc']
+    end_loc = cfg['end_loc']
+    BS_loc = cfg['BS_loc']
 
     print("="*80)
     print("MA-TD3 多无人机模型测试")
@@ -578,24 +439,17 @@ def test_matd3_model(
                 y_uav_all[episode][i][step_count] = uav.y
                 z_uav_all[episode][i][step_count] = uav.h
             
-            # 每100步显示进度
-            # if step_count % 100 == 0:
-            #     print(f"  步数: {step_count}, 已完成: {info['completed_targets']}/{user_num}")
-        
+
         # 统计结果
         Complete_time[episode] = step_count
         Total_rewards[episode] = episode_reward
         Completed_targets[episode] = info.get('completed_targets', 0)
-        
+
         if info.get('success', False):
             success_count += 1
             print("✓ 任务成功!")
         else:
             print("✗ 任务失败")
-        
-        # print(f"总步数: {step_count}")
-        # print(f"总奖励: {episode_reward:.2f}")
-        # print(f"完成目标: {info['completed_targets']}/{user_num}")
         
         # 显示每架无人机到达的目标点
         print(f"各无人机完成情况:")

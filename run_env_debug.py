@@ -2,26 +2,16 @@
 import os
 import numpy as np
 from MultiUAVWorld import MultiUAVWorld
+from utils import heuristic_action
 
 
 def make_users_file(path, n, length, width):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w') as f:
-        # 生成 n 个均匀分布的点（x y z）
         xs = np.linspace(1, length - 1, n)
         ys = np.linspace(1, width - 1, n)
         for i in range(n):
             f.write(f"{xs[i]:.3f} {ys[i]:.3f} 0.0\n")
-
-
-def heuristic_action(uav_pos, target_pos, dist_max):
-    vec = target_pos - uav_pos
-    dist = np.linalg.norm(vec)
-    if dist < 1e-6:
-        return np.array([0.0, 0.0])
-    phi = np.arctan2(vec[1], vec[0])
-    step = min(dist, dist_max)
-    return np.array([phi, step])
 
 
 def run_debug():

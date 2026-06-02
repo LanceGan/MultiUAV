@@ -10,7 +10,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # ====================== Actor Network (分散式) ======================
-# ====================== Actor Network (分散式) ======================
 class MActor(nn.Module):
     """多智能体Actor网络 - 每个智能体使用局部观测独立决策"""
     def __init__(self, local_state_dim, action_dim, net_width, max_action, min_action):
@@ -429,60 +428,21 @@ class MATD3(object):
 
     def save(self, episode, model_path):
         """保存所有智能体的模型"""
-        # 保存共享的Critic
-        torch.save(self.q_critic.state_dict(), 
-                  f"{model_path}matd3_critic_ep{episode}.pth")
-        
-        # 保存每个智能体的Actor
+        os.makedirs(model_path, exist_ok=True)
+        critic_path = os.path.join(model_path, f"matd3_critic_ep{episode}.pth")
+        torch.save(self.q_critic.state_dict(), critic_path)
         for i, agent in enumerate(self.agents):
-            torch.save(agent.actor.state_dict(), 
-                      f"{model_path}matd3_actor{i}_ep{episode}.pth")
-        
+            actor_path = os.path.join(model_path, f"matd3_actor{i}_ep{episode}.pth")
+            torch.save(agent.actor.state_dict(), actor_path)
         print(f"[MATD3] 模型已保存到 {model_path} (Episode {episode})")
 
     def load(self, episode, model_path):
         """加载所有智能体的模型"""
-        # 加载Critic
-        self.q_critic.load_state_dict(
-            torch.load(f"{model_path}matd3_critic_ep{episode}.pth")
-        )
+        critic_path = os.path.join(model_path, f"matd3_critic_ep{episode}.pth")
+        self.q_critic.load_state_dict(torch.load(critic_path, map_location=device))
         self.q_critic_target = copy.deepcopy(self.q_critic)
-        
-        # 加载每个智能体的Actor
         for i, agent in enumerate(self.agents):
-            agent.actor.load_state_dict(
-                torch.load(f"{model_path}matd3_actor{i}_ep{episode}.pth")
-            )
+            actor_path = os.path.join(model_path, f"matd3_actor{i}_ep{episode}.pth")
+            agent.actor.load_state_dict(torch.load(actor_path, map_location=device))
             agent.actor_target = copy.deepcopy(agent.actor)
-        
         print(f"[MATD3] 模型已从 {model_path} 加载 (Episode {episode})")
-def _matd3_save_with_join(self, episode, model_path):
-    """使用 os.path.join 保存模型，避免路径末尾斜杠问题。"""
-    os.makedirs(model_path, exist_ok=True)
-
-    critic_path = os.path.join(model_path, f"matd3_critic_ep{episode}.pth")
-    torch.save(self.q_critic.state_dict(), critic_path)
-
-    for i, agent in enumerate(self.agents):
-        actor_path = os.path.join(model_path, f"matd3_actor{i}_ep{episode}.pth")
-        torch.save(agent.actor.state_dict(), actor_path)
-
-    print(f"[MATD3] 模型已保存到 {model_path} (Episode {episode})")
-
-
-def _matd3_load_with_join(self, episode, model_path):
-    """使用 os.path.join 加载模型，避免路径末尾斜杠问题。"""
-    critic_path = os.path.join(model_path, f"matd3_critic_ep{episode}.pth")
-    self.q_critic.load_state_dict(torch.load(critic_path, map_location=device))
-    self.q_critic_target = copy.deepcopy(self.q_critic)
-
-    for i, agent in enumerate(self.agents):
-        actor_path = os.path.join(model_path, f"matd3_actor{i}_ep{episode}.pth")
-        agent.actor.load_state_dict(torch.load(actor_path, map_location=device))
-        agent.actor_target = copy.deepcopy(agent.actor)
-
-    print(f"[MATD3] 模型已从 {model_path} 加载 (Episode {episode})")
-
-
-MATD3.save = _matd3_save_with_join
-MATD3.load = _matd3_load_with_join
