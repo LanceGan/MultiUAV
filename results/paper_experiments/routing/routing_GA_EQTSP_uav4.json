@@ -1,6 +1,6 @@
 {
   "cluster_0": {
-    "path_length": 285.52092,
+    "path_length": 242.537913,
     "num_nodes": 12,
     "best_indices": [
       0,
@@ -12,14 +12,14 @@
       1,
       6,
       8,
-      9,
       10,
+      9,
       11
     ],
-    "time_s": 109.44
+    "time_s": 109.49
   },
   "cluster_1": {
-    "path_length": 152.148409,
+    "path_length": 152.316734,
     "num_nodes": 12,
     "best_indices": [
       0,
@@ -27,18 +27,18 @@
       5,
       4,
       8,
-      9,
-      3,
       10,
+      3,
+      9,
       7,
       6,
       2,
       11
     ],
-    "time_s": 87.14
+    "time_s": 84.96
   },
   "cluster_2": {
-    "path_length": 184.043016,
+    "path_length": 184.716322,
     "num_nodes": 12,
     "best_indices": [
       0,
@@ -54,10 +54,10 @@
       9,
       11
     ],
-    "time_s": 107.29
+    "time_s": 118.75
   },
   "cluster_3": {
-    "path_length": 217.951765,
+    "path_length": 218.143259,
     "num_nodes": 12,
     "best_indices": [
       0,
@@ -73,7 +73,7 @@
       8,
       11
     ],
-    "time_s": 109.65
+    "time_s": 111.77
   },
-  "total_path_length": 839.66411
+  "total_path_length": 797.714228
 }

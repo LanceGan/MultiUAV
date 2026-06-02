@@ -16,7 +16,7 @@
       2,
       11
     ],
-    "time_s": 16.18
+    "time_s": 16.31
   },
   "cluster_1": {
     "path_length": 79.157303,
@@ -35,26 +35,26 @@
       2,
       11
     ],
-    "time_s": 16.25
+    "time_s": 16.23
   },
   "cluster_2": {
-    "path_length": 98.501703,
+    "path_length": 95.083882,
     "num_nodes": 12,
     "best_indices": [
       0,
       6,
       5,
       1,
-      2,
       7,
-      8,
-      9,
+      2,
       3,
-      10,
       4,
+      10,
+      9,
+      8,
       11
     ],
-    "time_s": 1.12
+    "time_s": 1.39
   },
-  "total_path_length": 285.303198
+  "total_path_length": 281.885377
 }

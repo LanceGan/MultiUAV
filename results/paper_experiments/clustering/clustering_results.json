@@ -12,9 +12,19 @@
       "variance": 0.0,
       "max_min_ratio": 1.0
     },
+    "jia2025": {
+      "time_s": 0.0,
+      "cluster_sizes": [
+        10.0,
+        10.0
+      ],
+      "std_dev": 0.0,
+      "variance": 0.0,
+      "max_min_ratio": 1.0
+    },
     "4d": {
       "time_s": 0.095,
-      "inertia": 3.239619,
+      "inertia": 3.241361,
       "cluster_sizes": [
         10.0,
         10.0
@@ -38,9 +48,20 @@
       "variance": 0.0,
       "max_min_ratio": 1.0
     },
+    "jia2025": {
+      "time_s": 0.0,
+      "cluster_sizes": [
+        10.0,
+        10.0,
+        10.0
+      ],
+      "std_dev": 0.0,
+      "variance": 0.0,
+      "max_min_ratio": 1.0
+    },
     "4d": {
-      "time_s": 0.144,
-      "inertia": 2.998312,
+      "time_s": 0.141,
+      "inertia": 2.987914,
       "cluster_sizes": [
         10.0,
         10.0,
@@ -54,7 +75,7 @@
   "uav4": {
     "n_users": 40,
     "naive": {
-      "time_s": 0.0,
+      "time_s": 0.001,
       "inertia": null,
       "cluster_sizes": [
         10.0,
@@ -66,9 +87,21 @@
       "variance": 0.0,
       "max_min_ratio": 1.0
     },
+    "jia2025": {
+      "time_s": 0.0,
+      "cluster_sizes": [
+        10.0,
+        10.0,
+        10.0,
+        10.0
+      ],
+      "std_dev": 0.0,
+      "variance": 0.0,
+      "max_min_ratio": 1.0
+    },
     "4d": {
-      "time_s": 0.187,
-      "inertia": 3.968688,
+      "time_s": 0.188,
+      "inertia": 3.969678,
       "cluster_sizes": [
         10.0,
         10.0,

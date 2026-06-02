@@ -2,25 +2,25 @@
   "n_uav": 3,
   "n_users": 30,
   "algorithms": {
-    "GA": {
+    "TSP": {
       "cluster_0": {
-        "path_length": 107.644192,
+        "path_length": 109.604765,
         "num_nodes": 12,
         "best_indices": [
           0,
           1,
           9,
           3,
-          4,
           6,
           7,
-          8,
+          4,
           10,
+          8,
           5,
           2,
           11
         ],
-        "time_s": 16.18
+        "time_s": 0.0
       },
       "cluster_1": {
         "path_length": 79.157303,
@@ -39,28 +39,88 @@
           2,
           11
         ],
-        "time_s": 16.25
+        "time_s": 0.0
       },
       "cluster_2": {
-        "path_length": 98.501703,
+        "path_length": 98.444511,
+        "num_nodes": 12,
+        "best_indices": [
+          0,
+          7,
+          2,
+          6,
+          5,
+          1,
+          3,
+          4,
+          10,
+          9,
+          8,
+          11
+        ],
+        "time_s": 0.0
+      },
+      "total_path_length": 287.206579
+    },
+    "GA": {
+      "cluster_0": {
+        "path_length": 107.644192,
+        "num_nodes": 12,
+        "best_indices": [
+          0,
+          1,
+          9,
+          3,
+          4,
+          6,
+          7,
+          8,
+          10,
+          5,
+          2,
+          11
+        ],
+        "time_s": 16.31
+      },
+      "cluster_1": {
+        "path_length": 79.157303,
+        "num_nodes": 12,
+        "best_indices": [
+          0,
+          1,
+          9,
+          10,
+          5,
+          8,
+          7,
+          4,
+          6,
+          3,
+          2,
+          11
+        ],
+        "time_s": 16.23
+      },
+      "cluster_2": {
+        "path_length": 95.083882,
         "num_nodes": 12,
         "best_indices": [
           0,
           6,
           5,
           1,
-          2,
           7,
-          8,
-          9,
+          2,
           3,
-          10,
           4,
+          10,
+          9,
+          8,
           11
         ],
-        "time_s": 1.12
+        "time_s": 1.39
       },
-      "total_path_length": 285.303198
+      "total_path_length": 281.885377
     },
     "PSO": {
       "cluster_0": {
@@ -80,7 +140,7 @@
           2,
           11
         ],
-        "time_s": 3.93
+        "time_s": 3.98
       },
       "cluster_1": {
         "path_length": 79.157303,
@@ -99,7 +159,7 @@
           2,
           11
         ],
-        "time_s": 3.9
+        "time_s": 3.96
       },
       "cluster_2": {
         "path_length": 95.083882,
@@ -118,7 +178,7 @@
           8,
           11
         ],
-        "time_s": 3.92
+        "time_s": 3.97
       },
       "total_path_length": 281.885377
     },
@@ -140,7 +200,7 @@
           1,
           11
         ],
-        "time_s": 1.22
+        "time_s": 1.21
       },
       "cluster_1": {
         "path_length": 138.334743,
@@ -159,7 +219,7 @@
           1,
           11
         ],
-        "time_s": 1.21
+        "time_s": 1.19
       },
       "cluster_2": {
         "path_length": 150.105883,
@@ -178,32 +238,32 @@
           1,
           11
         ],
-        "time_s": 1.17
+        "time_s": 1.15
       },
       "total_path_length": 487.512977
     },
-    "GA_EQTSP": {
+    "SingleMapGA": {
       "cluster_0": {
-        "path_length": 223.301932,
+        "path_length": 141.141639,
         "num_nodes": 12,
         "best_indices": [
           0,
-          3,
           1,
           9,
-          4,
-          10,
-          5,
-          7,
-          6,
+          3,
           8,
+          6,
+          7,
+          10,
+          4,
+          5,
           2,
           11
         ],
-        "time_s": 141.05
+        "time_s": 118.69
       },
       "cluster_1": {
-        "path_length": 184.103434,
+        "path_length": 120.99502,
         "num_nodes": 12,
         "best_indices": [
           0,
@@ -219,10 +279,70 @@
           1,
           11
         ],
-        "time_s": 122.76
+        "time_s": 115.46
       },
       "cluster_2": {
-        "path_length": 240.447649,
+        "path_length": 145.2744,
+        "num_nodes": 12,
+        "best_indices": [
+          0,
+          3,
+          2,
+          1,
+          7,
+          5,
+          6,
+          9,
+          10,
+          4,
+          8,
+          11
+        ],
+        "time_s": 99.91
+      },
+      "total_path_length": 407.411059
+    },
+    "GA_EQTSP": {
+      "cluster_0": {
+        "path_length": 223.550045,
+        "num_nodes": 12,
+        "best_indices": [
+          0,
+          3,
+          1,
+          9,
+          4,
+          10,
+          5,
+          7,
+          6,
+          8,
+          2,
+          11
+        ],
+        "time_s": 121.74
+      },
+      "cluster_1": {
+        "path_length": 171.28908,
+        "num_nodes": 12,
+        "best_indices": [
+          0,
+          3,
+          6,
+          7,
+          8,
+          4,
+          5,
+          9,
+          10,
+          1,
+          2,
+          11
+        ],
+        "time_s": 170.75
+      },
+      "cluster_2": {
+        "path_length": 240.216823,
         "num_nodes": 12,
         "best_indices": [
           0,
@@ -238,9 +358,9 @@
           8,
           11
         ],
-        "time_s": 99.39
+        "time_s": 100.82
       },
-      "total_path_length": 647.853015
+      "total_path_length": 635.055948
     }
   }
 }
