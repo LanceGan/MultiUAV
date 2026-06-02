@@ -20,7 +20,9 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from scenario_config import UAV_USER_MAP, INI_LOC, END_LOC
-from baselines import balanced_naive_kmeans, run_ga_eqtsp
+from baselines import (balanced_naive_kmeans, run_ga_eqtsp,
+                       jia2025_balanced_clustering, run_tsp_routing,
+                       run_single_map_ga)
 from Clustering import kmeans_4d
 
 
@@ -90,7 +92,7 @@ def get_ini_end_3d():
 # ---------------------------------------------------------------------------
 
 def run_clustering_experiment():
-    """Compare balanced_naive_kmeans vs kmeans_4d across UAV counts."""
+    """Compare balanced_naive_kmeans vs jia2025 vs kmeans_4d across UAV counts."""
     print("=" * 60)
     print("  CLUSTERING EXPERIMENT")
     print("=" * 60)
@@ -105,6 +107,7 @@ def run_clustering_experiment():
         print(f"\n--- UAV={n_uav}, Users={n_users} ---")
 
         points = load_points(n_users)
+        offloads = np.random.uniform(10, 100, size=n_users)  # Random data volumes
         print(f"  Loaded {points.shape[0]} points from Users_{n_users}.txt")
 
         # --- Naive balanced K-means (spatial only) ---
@@ -113,6 +116,15 @@ def run_clustering_experiment():
         t_naive = time.time() - t0
         metrics_naive = compute_balance_metrics(labels_naive, n_uav)
         print(f"  balanced_naive_kmeans: {t_naive:.2f}s  {metrics_naive}")
+
+        # --- Jia2025 balanced clustering (spatial + workload) ---
+        t0 = time.time()
+        labels_jia, centers_jia = jia2025_balanced_clustering(
+            points, offloads, n_uav, random_state=42
+        )
+        t_jia = time.time() - t0
+        metrics_jia = compute_balance_metrics(labels_jia, n_uav)
+        print(f"  jia2025_balanced:     {t_jia:.2f}s  {metrics_jia}")
 
         # --- 4D K-means (spatial + comm + volume) ---
         t0 = time.time()
@@ -132,6 +144,10 @@ def run_clustering_experiment():
                 "inertia": None,
                 **metrics_naive,
             },
+            "jia2025": {
+                "time_s": round(t_jia, 3),
+                **metrics_jia,
+            },
             "4d": {
                 "time_s": round(t_4d, 3),
                 "inertia": round(float(inertia_4d), 6),
@@ -143,6 +159,10 @@ def run_clustering_experiment():
         np.savetxt(
             os.path.join(out_dir, f"labels_naive_uav{n_uav}.txt"),
             labels_naive, fmt="%d",
+        )
+        np.savetxt(
+            os.path.join(out_dir, f"labels_jia2025_uav{n_uav}.txt"),
+            labels_jia, fmt="%d",
         )
         np.savetxt(
             os.path.join(out_dir, f"labels_4d_uav{n_uav}.txt"),
@@ -192,6 +212,18 @@ def _run_routing_algo(algo_name: str, cluster_points: np.ndarray,
                    data=full_data.copy())
         best_coords, best_length, best_indices = model.run()
 
+    elif algo_name == "TSP":
+        from baselines import run_tsp_routing
+        best_coords, best_length, best_indices = run_tsp_routing(
+            cluster_points, ini_loc, end_loc
+        )
+
+    elif algo_name == "SingleMapGA":
+        from baselines import run_single_map_ga
+        best_coords, best_length, best_indices = run_single_map_ga(
+            cluster_points, ini_loc, end_loc
+        )
+
     else:
         raise ValueError(f"Unknown algorithm: {algo_name}")
 
@@ -215,7 +247,7 @@ def run_routing_experiment():
     ensure_dir(out_dir)
 
     ini_loc, end_loc = get_ini_end_3d()
-    algorithms = ["GA", "PSO", "ACO", "GA_EQTSP"]
+    algorithms = ["TSP", "GA", "PSO", "ACO", "SingleMapGA", "GA_EQTSP"]
 
     # Primary comparison: N=3 (30 points), also run for N=2 and N=4
     for n_uav in [3, 2, 4]:
