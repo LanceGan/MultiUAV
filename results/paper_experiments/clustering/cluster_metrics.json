@@ -1,0 +1,917 @@
+{
+  "uav2": {
+    "n_users": 20,
+    "data_volume_range_MB": [
+      200,
+      300
+    ],
+    "total_data_MB": 4915.40457679557,
+    "global_g2a_outage_mean": 0.3933,
+    "global_a2g_sinr_mean_dB": 0.1977416593130851,
+    "methods": {
+      "naive_kmeans": {
+        "time_s": 2.6836,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.1509433962264148,
+          "g2a_worst_max_min_ratio": 1.1624040920716112,
+          "g2a_mean_std": 0.027599999999999958,
+          "a2g_mean_std_dB": 1.9023552715576073,
+          "composite_cost_std": 0.043016863519794446,
+          "total_dangerous_points": 7,
+          "per_cluster_dangerous": [
+            4,
+            3
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2369.2790688917594,
+            "mean_data_MB": 236.92790688917594,
+            "mean_g2a_outage": 0.42089999999999994,
+            "worst_g2a_outage": 0.782,
+            "n_dangerous_g2a": 4,
+            "best_g2a_outage": 0.014,
+            "mean_a2g_sinr_dB": -1.7046136122445223,
+            "worst_a2g_sinr_dB": -10.963311766438244,
+            "best_a2g_sinr_dB": 6.697033980348376,
+            "composite_comm_cost": 0.5399239479717746,
+            "avg_pairwise_dist": 18.136117328486748
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2546.125507903812,
+            "mean_data_MB": 254.6125507903812,
+            "mean_g2a_outage": 0.3657,
+            "worst_g2a_outage": 0.909,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.027,
+            "mean_a2g_sinr_dB": 2.1000969308706923,
+            "worst_a2g_sinr_dB": -12.807829184786018,
+            "best_a2g_sinr_dB": 19.747945843371248,
+            "composite_comm_cost": 0.4538902209321857,
+            "avg_pairwise_dist": 17.99179096219006
+          }
+        ]
+      },
+      "balanced_kmeans": {
+        "time_s": 0.001,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.8397111913357398,
+          "g2a_worst_max_min_ratio": 1.3835616438356164,
+          "g2a_mean_std": 0.11629999999999996,
+          "a2g_mean_std_dB": 1.9444599303675847,
+          "composite_cost_std": 0.02828648225720573,
+          "total_dangerous_points": 7,
+          "per_cluster_dangerous": [
+            1,
+            6
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2466.803728845674,
+            "mean_data_MB": 246.6803728845674,
+            "mean_g2a_outage": 0.277,
+            "worst_g2a_outage": 0.657,
+            "n_dangerous_g2a": 1,
+            "best_g2a_outage": 0.014,
+            "mean_a2g_sinr_dB": -1.5400402494112841,
+            "worst_a2g_sinr_dB": -12.807829184786018,
+            "best_a2g_sinr_dB": 19.747945843371248,
+            "composite_comm_cost": 0.46862060219477436,
+            "avg_pairwise_dist": 26.209748619300658
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2448.6008479498973,
+            "mean_data_MB": 244.86008479498975,
+            "mean_g2a_outage": 0.5095999999999999,
+            "worst_g2a_outage": 0.909,
+            "n_dangerous_g2a": 6,
+            "best_g2a_outage": 0.027,
+            "mean_a2g_sinr_dB": 1.935523568037454,
+            "worst_a2g_sinr_dB": -6.065227732487601,
+            "best_a2g_sinr_dB": 15.669025612470868,
+            "composite_comm_cost": 0.5251935667091858,
+            "avg_pairwise_dist": 15.693461325182462
+          }
+        ]
+      },
+      "jia2025": {
+        "time_s": 0.001,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.3557951482479784,
+          "g2a_worst_max_min_ratio": 1.1405269761606023,
+          "g2a_mean_std": 0.05940000000000001,
+          "a2g_mean_std_dB": 2.441102637656717,
+          "composite_cost_std": 0.0671910846930448,
+          "total_dangerous_points": 7,
+          "per_cluster_dangerous": [
+            2,
+            5
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2267.431403962235,
+            "mean_data_MB": 226.7431403962235,
+            "mean_g2a_outage": 0.3339,
+            "worst_g2a_outage": 0.909,
+            "n_dangerous_g2a": 2,
+            "best_g2a_outage": 0.014,
+            "mean_a2g_sinr_dB": 2.6388442969698023,
+            "worst_a2g_sinr_dB": -8.060990070943511,
+            "best_a2g_sinr_dB": 19.747945843371248,
+            "composite_comm_cost": 0.42971599975893526,
+            "avg_pairwise_dist": 18.2233940894173
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2647.9731728333363,
+            "mean_data_MB": 264.79731728333365,
+            "mean_g2a_outage": 0.4527,
+            "worst_g2a_outage": 0.797,
+            "n_dangerous_g2a": 5,
+            "best_g2a_outage": 0.027,
+            "mean_a2g_sinr_dB": -2.243360978343632,
+            "worst_a2g_sinr_dB": -12.807829184786018,
+            "best_a2g_sinr_dB": 15.669025612470868,
+            "composite_comm_cost": 0.5640981691450249,
+            "avg_pairwise_dist": 22.412163670700355
+          }
+        ]
+      },
+      "proposed_4d": {
+        "time_s": 0.1393,
+        "inertia": 2.3059213598970336,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.228328611898017,
+          "g2a_worst_max_min_ratio": 1.1405269761606023,
+          "g2a_mean_std": 0.0403,
+          "a2g_mean_std_dB": 1.737781908724369,
+          "composite_cost_std": 0.04683930331441005,
+          "total_dangerous_points": 7,
+          "per_cluster_dangerous": [
+            4,
+            3
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2304.37525579706,
+            "mean_data_MB": 230.437525579706,
+            "mean_g2a_outage": 0.43360000000000004,
+            "worst_g2a_outage": 0.909,
+            "n_dangerous_g2a": 4,
+            "best_g2a_outage": 0.014,
+            "mean_a2g_sinr_dB": -1.7467182710544997,
+            "worst_a2g_sinr_dB": -10.963311766438244,
+            "best_a2g_sinr_dB": 6.697033980348376,
+            "composite_comm_cost": 0.5437463877663902,
+            "avg_pairwise_dist": 17.43770605972274
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2611.0293209985107,
+            "mean_data_MB": 261.10293209985105,
+            "mean_g2a_outage": 0.35300000000000004,
+            "worst_g2a_outage": 0.797,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.027,
+            "mean_a2g_sinr_dB": 2.1422015896806696,
+            "worst_a2g_sinr_dB": -12.807829184786018,
+            "best_a2g_sinr_dB": 19.747945843371248,
+            "composite_comm_cost": 0.45006778113757007,
+            "avg_pairwise_dist": 18.727280476892208
+          }
+        ]
+      }
+    }
+  },
+  "uav3": {
+    "n_users": 30,
+    "data_volume_range_MB": [
+      200,
+      300
+    ],
+    "total_data_MB": 7314.214945165735,
+    "global_g2a_outage_mean": 0.32020000000000004,
+    "global_a2g_sinr_mean_dB": 3.0692273966267445,
+    "methods": {
+      "naive_kmeans": {
+        "time_s": 0.034,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.9704697986577184,
+          "g2a_worst_max_min_ratio": 1.90702479338843,
+          "g2a_mean_std": 0.09009472792566724,
+          "a2g_mean_std_dB": 1.0128226092705284,
+          "composite_cost_std": 0.055301775241113356,
+          "total_dangerous_points": 7,
+          "per_cluster_dangerous": [
+            0,
+            2,
+            5
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2486.120340493568,
+            "mean_data_MB": 248.61203404935682,
+            "mean_g2a_outage": 0.22349999999999998,
+            "worst_g2a_outage": 0.484,
+            "n_dangerous_g2a": 0,
+            "best_g2a_outage": 0.006,
+            "mean_a2g_sinr_dB": 4.4836756077545585,
+            "worst_a2g_sinr_dB": -6.7778827619709405,
+            "best_a2g_sinr_dB": 10.05611145576299,
+            "composite_comm_cost": 0.35895430826997343,
+            "avg_pairwise_dist": 12.732536806649962
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2415.9202775059025,
+            "mean_data_MB": 241.59202775059026,
+            "mean_g2a_outage": 0.29669999999999996,
+            "worst_g2a_outage": 0.856,
+            "n_dangerous_g2a": 2,
+            "best_g2a_outage": 0.024,
+            "mean_a2g_sinr_dB": 2.166512497667502,
+            "worst_a2g_sinr_dB": -10.202147017511535,
+            "best_a2g_sinr_dB": 9.988192505015974,
+            "composite_comm_cost": 0.4280373303286668,
+            "avg_pairwise_dist": 11.921989057262083
+          },
+          {
+            "cluster_id": 2,
+            "n_points": 10,
+            "total_data_MB": 2412.1743271662644,
+            "mean_data_MB": 241.21743271662643,
+            "mean_g2a_outage": 0.4404,
+            "worst_g2a_outage": 0.923,
+            "n_dangerous_g2a": 5,
+            "best_g2a_outage": 0.012,
+            "mean_a2g_sinr_dB": 2.557494084458173,
+            "worst_a2g_sinr_dB": -13.549401801340366,
+            "best_a2g_sinr_dB": 22.11789396166134,
+            "composite_comm_cost": 0.49440637672079285,
+            "avg_pairwise_dist": 14.129213765097992
+          }
+        ]
+      },
+      "balanced_kmeans": {
+        "time_s": 0.001,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.9413072476656292,
+          "g2a_worst_max_min_ratio": 1.1187878787878789,
+          "g2a_mean_std": 0.08770454188163045,
+          "a2g_mean_std_dB": 0.6870535320956676,
+          "composite_cost_std": 0.041064260994934765,
+          "total_dangerous_points": 7,
+          "per_cluster_dangerous": [
+            1,
+            1,
+            5
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2535.1018064813284,
+            "mean_data_MB": 253.51018064813283,
+            "mean_g2a_outage": 0.29910000000000003,
+            "worst_g2a_outage": 0.894,
+            "n_dangerous_g2a": 1,
+            "best_g2a_outage": 0.006,
+            "mean_a2g_sinr_dB": 4.453309017117565,
+            "worst_a2g_sinr_dB": -13.549401801340366,
+            "best_a2g_sinr_dB": 9.906620258403482,
+            "composite_comm_cost": 0.42984556561389264,
+            "avg_pairwise_dist": 14.403995006706026
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2373.4530730560527,
+            "mean_data_MB": 237.34530730560527,
+            "mean_g2a_outage": 0.22490000000000002,
+            "worst_g2a_outage": 0.825,
+            "n_dangerous_g2a": 1,
+            "best_g2a_outage": 0.024,
+            "mean_a2g_sinr_dB": 2.673637975921769,
+            "worst_a2g_sinr_dB": -10.202147017511535,
+            "best_a2g_sinr_dB": 10.05611145576299,
+            "composite_comm_cost": 0.37553788837705876,
+            "avg_pairwise_dist": 12.06134638806727
+          },
+          {
+            "cluster_id": 2,
+            "n_points": 10,
+            "total_data_MB": 2405.6600656283545,
+            "mean_data_MB": 240.56600656283544,
+            "mean_g2a_outage": 0.43660000000000004,
+            "worst_g2a_outage": 0.923,
+            "n_dangerous_g2a": 5,
+            "best_g2a_outage": 0.012,
+            "mean_a2g_sinr_dB": 2.080735196840899,
+            "worst_a2g_sinr_dB": -4.114860280204556,
+            "best_a2g_sinr_dB": 22.11789396166134,
+            "composite_comm_cost": 0.47601456132848174,
+            "avg_pairwise_dist": 13.032397608160942
+          }
+        ]
+      },
+      "jia2025": {
+        "time_s": 0.001,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.8330404217926182,
+          "g2a_worst_max_min_ratio": 1.90702479338843,
+          "g2a_mean_std": 0.07746637980440287,
+          "a2g_mean_std_dB": 1.9394548659261743,
+          "composite_cost_std": 0.06431125449153978,
+          "total_dangerous_points": 7,
+          "per_cluster_dangerous": [
+            4,
+            0,
+            3
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2303.1807256738357,
+            "mean_data_MB": 230.31807256738358,
+            "mean_g2a_outage": 0.41719999999999996,
+            "worst_g2a_outage": 0.923,
+            "n_dangerous_g2a": 4,
+            "best_g2a_outage": 0.006,
+            "mean_a2g_sinr_dB": 1.4370490596676118,
+            "worst_a2g_sinr_dB": -13.549401801340366,
+            "best_a2g_sinr_dB": 8.185955753653015,
+            "composite_comm_cost": 0.4985132729239081,
+            "avg_pairwise_dist": 14.069330272106738
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2603.9196489080955,
+            "mean_data_MB": 260.39196489080956,
+            "mean_g2a_outage": 0.22760000000000002,
+            "worst_g2a_outage": 0.484,
+            "n_dangerous_g2a": 0,
+            "best_g2a_outage": 0.034,
+            "mean_a2g_sinr_dB": 5.794301419084483,
+            "worst_a2g_sinr_dB": -6.7778827619709405,
+            "best_a2g_sinr_dB": 10.05611145576299,
+            "composite_comm_cost": 0.34263137329841525,
+            "avg_pairwise_dist": 13.031683439666873
+          },
+          {
+            "cluster_id": 2,
+            "n_points": 10,
+            "total_data_MB": 2407.1145705838035,
+            "mean_data_MB": 240.71145705838035,
+            "mean_g2a_outage": 0.31579999999999997,
+            "worst_g2a_outage": 0.856,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.012,
+            "mean_a2g_sinr_dB": 1.9763317111281389,
+            "worst_a2g_sinr_dB": -10.202147017511535,
+            "best_a2g_sinr_dB": 22.11789396166134,
+            "composite_comm_cost": 0.4402533690971097,
+            "avg_pairwise_dist": 15.306491933568914
+          }
+        ]
+      },
+      "proposed_4d": {
+        "time_s": 0.1776,
+        "inertia": 3.8701093294091686,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.3802922442862495,
+          "g2a_worst_max_min_ratio": 1.1187878787878789,
+          "g2a_mean_std": 0.04159382967059737,
+          "a2g_mean_std_dB": 1.008181490108412,
+          "composite_cost_std": 0.015670103829701597,
+          "total_dangerous_points": 7,
+          "per_cluster_dangerous": [
+            3,
+            1,
+            3
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2390.8614818792475,
+            "mean_data_MB": 239.08614818792475,
+            "mean_g2a_outage": 0.3684,
+            "worst_g2a_outage": 0.923,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.006,
+            "mean_a2g_sinr_dB": 2.1231242820442233,
+            "worst_a2g_sinr_dB": 0.16987525589373056,
+            "best_a2g_sinr_dB": 9.906620258403482,
+            "composite_comm_cost": 0.4318300006302629,
+            "avg_pairwise_dist": 13.110793728218821
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2451.2892144126567,
+            "mean_data_MB": 245.12892144126567,
+            "mean_g2a_outage": 0.2669,
+            "worst_g2a_outage": 0.825,
+            "n_dangerous_g2a": 1,
+            "best_g2a_outage": 0.09,
+            "mean_a2g_sinr_dB": 3.3506269088450713,
+            "worst_a2g_sinr_dB": -10.202147017511535,
+            "best_a2g_sinr_dB": 10.05611145576299,
+            "composite_comm_cost": 0.40602822004422084,
+            "avg_pairwise_dist": 13.542321088226506
+          },
+          {
+            "cluster_id": 2,
+            "n_points": 10,
+            "total_data_MB": 2472.0642488738304,
+            "mean_data_MB": 247.20642488738304,
+            "mean_g2a_outage": 0.3253,
+            "worst_g2a_outage": 0.894,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.012,
+            "mean_a2g_sinr_dB": 3.7339309989909397,
+            "worst_a2g_sinr_dB": -13.549401801340366,
+            "best_a2g_sinr_dB": 22.11789396166134,
+            "composite_comm_cost": 0.4435397946449493,
+            "avg_pairwise_dist": 23.355421463520578
+          }
+        ]
+      }
+    }
+  },
+  "uav4": {
+    "n_users": 40,
+    "data_volume_range_MB": [
+      200,
+      300
+    ],
+    "total_data_MB": 10021.863066106329,
+    "global_g2a_outage_mean": 0.425225,
+    "global_a2g_sinr_mean_dB": 1.3070072665400658,
+    "methods": {
+      "naive_kmeans": {
+        "time_s": 0.028,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            11,
+            7,
+            12
+          ],
+          "std_dev": 1.8708286933869707,
+          "variance": 3.5,
+          "max_min_ratio": 1.7142857142857142
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.3529584188266823,
+          "g2a_worst_max_min_ratio": 1.2993288590604026,
+          "g2a_mean_std": 0.045506008064567165,
+          "a2g_mean_std_dB": 1.9058524350247965,
+          "composite_cost_std": 0.03251680241428426,
+          "total_dangerous_points": 17,
+          "per_cluster_dangerous": [
+            3,
+            6,
+            4,
+            4
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2414.6950397514356,
+            "mean_data_MB": 241.46950397514357,
+            "mean_g2a_outage": 0.43489999999999995,
+            "worst_g2a_outage": 0.968,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.052,
+            "mean_a2g_sinr_dB": 2.460399385710219,
+            "worst_a2g_sinr_dB": -13.856376975809365,
+            "best_a2g_sinr_dB": 19.88790296335685,
+            "composite_comm_cost": 0.4756790036869171,
+            "avg_pairwise_dist": 12.393725090407786
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 11,
+            "total_data_MB": 2794.3538712793124,
+            "mean_data_MB": 254.03217011630113,
+            "mean_g2a_outage": 0.4895454545454545,
+            "worst_g2a_outage": 0.958,
+            "n_dangerous_g2a": 6,
+            "best_g2a_outage": 0.046,
+            "mean_a2g_sinr_dB": 0.5440898824153304,
+            "worst_a2g_sinr_dB": -9.68292857981279,
+            "best_a2g_sinr_dB": 9.054283917730684,
+            "composite_comm_cost": 0.5313963137859721,
+            "avg_pairwise_dist": 9.880123383991075
+          },
+          {
+            "cluster_id": 2,
+            "n_points": 7,
+            "total_data_MB": 1799.1857896929075,
+            "mean_data_MB": 257.0265413847011,
+            "mean_g2a_outage": 0.41900000000000004,
+            "worst_g2a_outage": 0.745,
+            "n_dangerous_g2a": 4,
+            "best_g2a_outage": 0.104,
+            "mean_a2g_sinr_dB": 4.312522804297752,
+            "worst_a2g_sinr_dB": -4.053148869474517,
+            "best_a2g_sinr_dB": 12.106930491220073,
+            "composite_comm_cost": 0.440285487009031,
+            "avg_pairwise_dist": 11.852927358303102
+          },
+          {
+            "cluster_id": 3,
+            "n_points": 12,
+            "total_data_MB": 3013.628365382673,
+            "mean_data_MB": 251.13569711522277,
+            "mean_g2a_outage": 0.3618333333333333,
+            "worst_g2a_outage": 0.798,
+            "n_dangerous_g2a": 4,
+            "best_g2a_outage": 0.017,
+            "mean_a2g_sinr_dB": -0.7080292943460383,
+            "worst_a2g_sinr_dB": -8.60997049381617,
+            "best_a2g_sinr_dB": 18.066783300323976,
+            "composite_comm_cost": 0.48609331134293454,
+            "avg_pairwise_dist": 8.62822963962949
+          }
+        ]
+      },
+      "balanced_kmeans": {
+        "time_s": 0.002,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10,
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.3987086359967715,
+          "g2a_worst_max_min_ratio": 1.2993288590604026,
+          "g2a_mean_std": 0.05706589940586234,
+          "a2g_mean_std_dB": 2.865282008851829,
+          "composite_cost_std": 0.05551556816606833,
+          "total_dangerous_points": 17,
+          "per_cluster_dangerous": [
+            3,
+            6,
+            5,
+            3
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2570.548567539905,
+            "mean_data_MB": 257.0548567539905,
+            "mean_g2a_outage": 0.37170000000000003,
+            "worst_g2a_outage": 0.798,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.017,
+            "mean_a2g_sinr_dB": -1.6404531844760306,
+            "worst_a2g_sinr_dB": -8.60997049381617,
+            "best_a2g_sinr_dB": 18.066783300323976,
+            "composite_comm_cost": 0.4892436261121295,
+            "avg_pairwise_dist": 7.579323701384345
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2450.8529039925556,
+            "mean_data_MB": 245.08529039925557,
+            "mean_g2a_outage": 0.5199,
+            "worst_g2a_outage": 0.958,
+            "n_dangerous_g2a": 6,
+            "best_g2a_outage": 0.046,
+            "mean_a2g_sinr_dB": 0.805745654055842,
+            "worst_a2g_sinr_dB": -9.68292857981279,
+            "best_a2g_sinr_dB": 9.054283917730684,
+            "composite_comm_cost": 0.5689076935737274,
+            "avg_pairwise_dist": 12.251471776069383
+          },
+          {
+            "cluster_id": 2,
+            "n_points": 10,
+            "total_data_MB": 2632.7144974652238,
+            "mean_data_MB": 263.27144974652236,
+            "mean_g2a_outage": 0.41790000000000005,
+            "worst_g2a_outage": 0.745,
+            "n_dangerous_g2a": 5,
+            "best_g2a_outage": 0.073,
+            "mean_a2g_sinr_dB": 4.381372332197794,
+            "worst_a2g_sinr_dB": -0.48782953453404676,
+            "best_a2g_sinr_dB": 19.88790296335685,
+            "composite_comm_cost": 0.41226652058472274,
+            "avg_pairwise_dist": 14.059589587465354
+          },
+          {
+            "cluster_id": 3,
+            "n_points": 10,
+            "total_data_MB": 2367.747097108644,
+            "mean_data_MB": 236.7747097108644,
+            "mean_g2a_outage": 0.3914,
+            "worst_g2a_outage": 0.968,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.052,
+            "mean_a2g_sinr_dB": 1.681364264382657,
+            "worst_a2g_sinr_dB": -13.856376975809365,
+            "best_a2g_sinr_dB": 7.5716666313112615,
+            "composite_comm_cost": 0.4813089230987502,
+            "avg_pairwise_dist": 18.790450835101044
+          }
+        ]
+      },
+      "jia2025": {
+        "time_s": 0.001,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10,
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.8721054506590664,
+          "g2a_worst_max_min_ratio": 1.2703412073490814,
+          "g2a_mean_std": 0.09421866521555057,
+          "a2g_mean_std_dB": 2.1133511838225547,
+          "composite_cost_std": 0.07264232233066595,
+          "total_dangerous_points": 17,
+          "per_cluster_dangerous": [
+            5,
+            5,
+            4,
+            3
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2747.471255617724,
+            "mean_data_MB": 274.7471255617724,
+            "mean_g2a_outage": 0.5255,
+            "worst_g2a_outage": 0.958,
+            "n_dangerous_g2a": 5,
+            "best_g2a_outage": 0.092,
+            "mean_a2g_sinr_dB": -2.1628466214459,
+            "worst_a2g_sinr_dB": -9.68292857981279,
+            "best_a2g_sinr_dB": 7.925858639577741,
+            "composite_comm_cost": 0.5894831474335143,
+            "avg_pairwise_dist": 10.560618652005797
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2259.2823059206394,
+            "mean_data_MB": 225.92823059206393,
+            "mean_g2a_outage": 0.4897,
+            "worst_g2a_outage": 0.968,
+            "n_dangerous_g2a": 5,
+            "best_g2a_outage": 0.052,
+            "mean_a2g_sinr_dB": 1.466203922303123,
+            "worst_a2g_sinr_dB": -7.767006756099425,
+            "best_a2g_sinr_dB": 7.5716666313112615,
+            "composite_comm_cost": 0.5178103220792405,
+            "avg_pairwise_dist": 12.343277547271004
+          },
+          {
+            "cluster_id": 2,
+            "n_points": 10,
+            "total_data_MB": 2786.6038330631673,
+            "mean_data_MB": 278.6603833063167,
+            "mean_g2a_outage": 0.40499999999999997,
+            "worst_g2a_outage": 0.844,
+            "n_dangerous_g2a": 4,
+            "best_g2a_outage": 0.087,
+            "mean_a2g_sinr_dB": 3.3620593313284672,
+            "worst_a2g_sinr_dB": -13.856376975809365,
+            "best_a2g_sinr_dB": 19.88790296335685,
+            "composite_comm_cost": 0.44736881423786456,
+            "avg_pairwise_dist": 19.334571271935946
+          },
+          {
+            "cluster_id": 3,
+            "n_points": 10,
+            "total_data_MB": 2228.505671504798,
+            "mean_data_MB": 222.8505671504798,
+            "mean_g2a_outage": 0.2807,
+            "worst_g2a_outage": 0.762,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.017,
+            "mean_a2g_sinr_dB": 2.5626124339745733,
+            "worst_a2g_sinr_dB": -8.106373253868199,
+            "best_a2g_sinr_dB": 18.066783300323976,
+            "composite_comm_cost": 0.3970644796187103,
+            "avg_pairwise_dist": 14.781862184263494
+          }
+        ]
+      },
+      "proposed_4d": {
+        "time_s": 0.198,
+        "inertia": 2.7191690412615586,
+        "balance": {
+          "cluster_sizes": [
+            10,
+            10,
+            10,
+            10
+          ],
+          "std_dev": 0.0,
+          "variance": 0.0,
+          "max_min_ratio": 1.0
+        },
+        "comm_balance": {
+          "g2a_mean_max_min_ratio": 1.6463693539165236,
+          "g2a_worst_max_min_ratio": 1.2703412073490814,
+          "g2a_mean_std": 0.0885895697867418,
+          "a2g_mean_std_dB": 2.1523620764885645,
+          "composite_cost_std": 0.06980593409055778,
+          "total_dangerous_points": 17,
+          "per_cluster_dangerous": [
+            6,
+            4,
+            4,
+            3
+          ]
+        },
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_points": 10,
+            "total_data_MB": 2768.9354723481106,
+            "mean_data_MB": 276.8935472348111,
+            "mean_g2a_outage": 0.5759,
+            "worst_g2a_outage": 0.958,
+            "n_dangerous_g2a": 6,
+            "best_g2a_outage": 0.092,
+            "mean_a2g_sinr_dB": -0.5876959392160017,
+            "worst_a2g_sinr_dB": -9.68292857981279,
+            "best_a2g_sinr_dB": 7.925858639577741,
+            "composite_comm_cost": 0.6069426735233934,
+            "avg_pairwise_dist": 10.330575358476692
+          },
+          {
+            "cluster_id": 1,
+            "n_points": 10,
+            "total_data_MB": 2281.508854724621,
+            "mean_data_MB": 228.1508854724621,
+            "mean_g2a_outage": 0.3498,
+            "worst_g2a_outage": 0.762,
+            "n_dangerous_g2a": 4,
+            "best_g2a_outage": 0.017,
+            "mean_a2g_sinr_dB": -0.9632068392651305,
+            "worst_a2g_sinr_dB": -8.106373253868199,
+            "best_a2g_sinr_dB": 18.066783300323976,
+            "composite_comm_cost": 0.45764654761787915,
+            "avg_pairwise_dist": 12.628279485805292
+          },
+          {
+            "cluster_id": 2,
+            "n_points": 10,
+            "total_data_MB": 2750.466651243198,
+            "mean_data_MB": 275.0466651243198,
+            "mean_g2a_outage": 0.39680000000000004,
+            "worst_g2a_outage": 0.844,
+            "n_dangerous_g2a": 4,
+            "best_g2a_outage": 0.087,
+            "mean_a2g_sinr_dB": 6.166363789620586,
+            "worst_a2g_sinr_dB": -13.856376975809365,
+            "best_a2g_sinr_dB": 19.88790296335685,
+            "composite_comm_cost": 0.4281653211020363,
+            "avg_pairwise_dist": 15.743470741511846
+          },
+          {
+            "cluster_id": 3,
+            "n_points": 10,
+            "total_data_MB": 2220.9520877904,
+            "mean_data_MB": 222.09520877904,
+            "mean_g2a_outage": 0.3784,
+            "worst_g2a_outage": 0.968,
+            "n_dangerous_g2a": 3,
+            "best_g2a_outage": 0.046,
+            "mean_a2g_sinr_dB": 0.6125680550208096,
+            "worst_a2g_sinr_dB": -7.767006756099425,
+            "best_a2g_sinr_dB": 7.5716666313112615,
+            "composite_comm_cost": 0.4589722211260209,
+            "avg_pairwise_dist": 12.872143669138406
+          }
+        ]
+      }
+    }
+  }
+}

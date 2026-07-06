@@ -1,0 +1,827 @@
+{
+  "uav2": {
+    "n_users": 20,
+    "algorithms": {
+      "TSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 0.0,
+            "euclidean_length": 185.94253569482677,
+            "g2a_outage_mean": 0.533219695950491,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.434739680213427,
+            "a2g_sinr_min_dB": -13.985676057410126,
+            "a2g_rate_mean_Mbps": 1.8160765361273419,
+            "weighted_cost": 287.42588855883145,
+            "n_samples": 7433
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 0.0,
+            "euclidean_length": 197.9342716218136,
+            "g2a_outage_mean": 0.46810276829730757,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.5675233721718893,
+            "a2g_sinr_min_dB": -12.9583646159809,
+            "a2g_rate_mean_Mbps": 2.064404331740645,
+            "weighted_cost": 304.4839742257068,
+            "n_samples": 7911
+          }
+        ],
+        "total_euclidean_length": 383.87680731664034,
+        "total_weighted_cost": 591.9098627845383
+      },
+      "GA": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 20.56,
+            "euclidean_length": 185.94253569482677,
+            "g2a_outage_mean": 0.5333631104533836,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.430765451701716,
+            "a2g_sinr_min_dB": -13.772881491928676,
+            "a2g_rate_mean_Mbps": 1.8146733296233752,
+            "weighted_cost": 287.6044245185989,
+            "n_samples": 7433
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 13.63,
+            "euclidean_length": 197.9342716218136,
+            "g2a_outage_mean": 0.4683889520920238,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.5623412521630478,
+            "a2g_sinr_min_dB": -12.949806961618403,
+            "a2g_rate_mean_Mbps": 2.06366731547938,
+            "weighted_cost": 304.6123604291464,
+            "n_samples": 7911
+          }
+        ],
+        "total_euclidean_length": 383.87680731664034,
+        "total_weighted_cost": 592.2167849477453
+      },
+      "PSO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 4.06,
+            "euclidean_length": 185.94253569482677,
+            "g2a_outage_mean": 0.5334786761738194,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.429487737239822,
+            "a2g_sinr_min_dB": -13.898433025173075,
+            "a2g_rate_mean_Mbps": 1.8148392743977233,
+            "weighted_cost": 287.3944903071625,
+            "n_samples": 7433
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 3.96,
+            "euclidean_length": 218.30364875056173,
+            "g2a_outage_mean": 0.4675041256016502,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.456242955723798,
+            "a2g_sinr_min_dB": -12.904572161999623,
+            "a2g_rate_mean_Mbps": 2.020081399377689,
+            "weighted_cost": 336.04532851808784,
+            "n_samples": 8726
+          }
+        ],
+        "total_euclidean_length": 404.2461844453885,
+        "total_weighted_cost": 623.4398188252503
+      },
+      "ACO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 1.15,
+            "euclidean_length": 147.30939487514033,
+            "g2a_outage_mean": 0.504535065376125,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.5109250209977874,
+            "a2g_sinr_min_dB": -13.728793204628222,
+            "a2g_rate_mean_Mbps": 1.8420183289371308,
+            "weighted_cost": 225.6733618138437,
+            "n_samples": 5889
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 1.15,
+            "euclidean_length": 181.0131984472177,
+            "g2a_outage_mean": 0.4934702792369367,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.6569650820796373,
+            "a2g_sinr_min_dB": -12.89391507531931,
+            "a2g_rate_mean_Mbps": 1.7911432348705183,
+            "weighted_cost": 281.7594575808359,
+            "n_samples": 7234
+          }
+        ],
+        "total_euclidean_length": 328.322593322358,
+        "total_weighted_cost": 507.4328193946796
+      },
+      "SingleMapGA": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 176.0,
+            "euclidean_length": 195.8682825187175,
+            "g2a_outage_mean": 0.5734871008939973,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 1.3832529087392735,
+            "a2g_sinr_min_dB": -14.000324224878236,
+            "a2g_rate_mean_Mbps": 1.5709843239285763,
+            "weighted_cost": 309.29823342510537,
+            "n_samples": 7830
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 113.24,
+            "euclidean_length": 231.06201119837368,
+            "g2a_outage_mean": 0.47672888696405363,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.147954415079857,
+            "a2g_sinr_min_dB": -13.075514410859597,
+            "a2g_rate_mean_Mbps": 1.9678707930097954,
+            "weighted_cost": 357.3807412242111,
+            "n_samples": 9236
+          }
+        ],
+        "total_euclidean_length": 426.9302937170912,
+        "total_weighted_cost": 666.6789746493164
+      },
+      "GA_EQTSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 156.39,
+            "euclidean_length": 176.05050140153065,
+            "g2a_outage_mean": 0.5395082409775503,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 0.8807565630147894,
+            "a2g_sinr_min_dB": -13.718767617009464,
+            "a2g_rate_mean_Mbps": 1.6036376925185554,
+            "weighted_cost": 276.76956244218235,
+            "n_samples": 7038
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 112.81,
+            "euclidean_length": 192.85027064964189,
+            "g2a_outage_mean": 0.43851933056564607,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.0805182060632164,
+            "a2g_sinr_min_dB": -12.949014922484022,
+            "a2g_rate_mean_Mbps": 1.9689734965395758,
+            "weighted_cost": 295.0057215801979,
+            "n_samples": 7708
+          }
+        ],
+        "total_euclidean_length": 368.90077205117257,
+        "total_weighted_cost": 571.7752840223802
+      }
+    }
+  },
+  "uav3": {
+    "n_users": 30,
+    "algorithms": {
+      "TSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 0.0,
+            "euclidean_length": 165.43887307654734,
+            "g2a_outage_mean": 0.5521052631578948,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 4.278620626472199,
+            "a2g_sinr_min_dB": -14.669884882422943,
+            "a2g_rate_mean_Mbps": 2.058522523142361,
+            "weighted_cost": 257.81227918490595,
+            "n_samples": 6612
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 0.0,
+            "euclidean_length": 124.0816260925916,
+            "g2a_outage_mean": 0.4614960677555958,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 1.8586133376760579,
+            "a2g_sinr_min_dB": -11.49442317998183,
+            "a2g_rate_mean_Mbps": 1.6676608445030894,
+            "weighted_cost": 189.41963814271057,
+            "n_samples": 4959
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 0.0,
+            "euclidean_length": 237.90453260009804,
+            "g2a_outage_mean": 0.4609012825904121,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.462489377748563,
+            "a2g_sinr_min_dB": -14.795283273480802,
+            "a2g_rate_mean_Mbps": 1.7792088457100508,
+            "weighted_cost": 364.63447132799985,
+            "n_samples": 9512
+          }
+        ],
+        "total_euclidean_length": 527.425031769237,
+        "total_weighted_cost": 811.8663886556164
+      },
+      "GA": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 16.31,
+            "euclidean_length": 165.49518798370354,
+            "g2a_outage_mean": 0.5401673216444982,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 4.458377751264589,
+            "a2g_sinr_min_dB": -14.905205425430166,
+            "a2g_rate_mean_Mbps": 2.0970952150728075,
+            "weighted_cost": 256.711351330524,
+            "n_samples": 6616
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 16.23,
+            "euclidean_length": 124.0816260925916,
+            "g2a_outage_mean": 0.46153438193184104,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 1.859135258788467,
+            "a2g_sinr_min_dB": -11.414815100309115,
+            "a2g_rate_mean_Mbps": 1.6679470753924213,
+            "weighted_cost": 189.5195773860327,
+            "n_samples": 4959
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 1.39,
+            "euclidean_length": 229.413387519153,
+            "g2a_outage_mean": 0.4559579153946795,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.3177997359564935,
+            "a2g_sinr_min_dB": -14.757986930670219,
+            "a2g_rate_mean_Mbps": 1.767014562118544,
+            "weighted_cost": 351.3486927987059,
+            "n_samples": 9172
+          }
+        ],
+        "total_euclidean_length": 518.9902015954481,
+        "total_weighted_cost": 797.5796215152626
+      },
+      "PSO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 3.98,
+            "euclidean_length": 165.49518798370354,
+            "g2a_outage_mean": 0.540325423216445,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 4.457291313750642,
+            "a2g_sinr_min_dB": -14.776935370038617,
+            "a2g_rate_mean_Mbps": 2.0966019680215693,
+            "weighted_cost": 256.43930179739135,
+            "n_samples": 6616
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 3.96,
+            "euclidean_length": 124.0816260925916,
+            "g2a_outage_mean": 0.4614829602742488,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 1.8580982709352354,
+            "a2g_sinr_min_dB": -11.305278016177526,
+            "a2g_rate_mean_Mbps": 1.6676368846387732,
+            "weighted_cost": 189.72797713605004,
+            "n_samples": 4959
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 3.97,
+            "euclidean_length": 229.413387519153,
+            "g2a_outage_mean": 0.4560286742259049,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.3194225533462713,
+            "a2g_sinr_min_dB": -14.515274866339123,
+            "a2g_rate_mean_Mbps": 1.7673363922295169,
+            "weighted_cost": 351.9082511200561,
+            "n_samples": 9172
+          }
+        ],
+        "total_euclidean_length": 518.9902015954481,
+        "total_weighted_cost": 798.0755300534975
+      },
+      "ACO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 1.21,
+            "euclidean_length": 147.36862008653344,
+            "g2a_outage_mean": 0.4891034131431482,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 4.894104541516653,
+            "a2g_sinr_min_dB": -13.109398142379444,
+            "a2g_rate_mean_Mbps": 2.2451132518415244,
+            "weighted_cost": 222.74887605736407,
+            "n_samples": 5889
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 1.19,
+            "euclidean_length": 140.72884731163498,
+            "g2a_outage_mean": 0.41299608819345657,
+            "g2a_outage_max": 0.994,
+            "a2g_sinr_mean_dB": 3.49013421516166,
+            "a2g_sinr_min_dB": -13.186510708983965,
+            "a2g_rate_mean_Mbps": 2.0585513825601875,
+            "weighted_cost": 211.56112511233107,
+            "n_samples": 5624
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 1.15,
+            "euclidean_length": 189.9154751301425,
+            "g2a_outage_mean": 0.48106110891610687,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.3045945586712304,
+            "a2g_sinr_min_dB": -14.464256398452413,
+            "a2g_rate_mean_Mbps": 1.7387683189110978,
+            "weighted_cost": 293.863161765085,
+            "n_samples": 7593
+          }
+        ],
+        "total_euclidean_length": 478.01294252831093,
+        "total_weighted_cost": 728.1731629347802
+      },
+      "SingleMapGA": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 118.69,
+            "euclidean_length": 134.63016335394244,
+            "g2a_outage_mean": 0.561124186651794,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 4.382212909717107,
+            "a2g_sinr_min_dB": -14.841124229105192,
+            "a2g_rate_mean_Mbps": 2.080223010498621,
+            "weighted_cost": 210.22323156660613,
+            "n_samples": 5379
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 115.46,
+            "euclidean_length": 129.82606090412432,
+            "g2a_outage_mean": 0.4387829606784888,
+            "g2a_outage_max": 0.982,
+            "a2g_sinr_mean_dB": 2.218794648391888,
+            "a2g_sinr_min_dB": -11.440710015629076,
+            "a2g_rate_mean_Mbps": 1.723742264767441,
+            "weighted_cost": 196.9053871060774,
+            "n_samples": 5188
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 99.91,
+            "euclidean_length": 203.62503188125964,
+            "g2a_outage_mean": 0.47807530712530716,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 1.4668372510175463,
+            "a2g_sinr_min_dB": -14.814344121502815,
+            "a2g_rate_mean_Mbps": 1.5268311056771748,
+            "weighted_cost": 309.0799872584639,
+            "n_samples": 8140
+          }
+        ],
+        "total_euclidean_length": 468.0812561393264,
+        "total_weighted_cost": 716.2086059311474
+      },
+      "GA_EQTSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 121.74,
+            "euclidean_length": 126.17668046543764,
+            "g2a_outage_mean": 0.5747614042046807,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 4.107635403179744,
+            "a2g_sinr_min_dB": -9.721313368088827,
+            "a2g_rate_mean_Mbps": 1.9725181153449427,
+            "weighted_cost": 203.0446399059573,
+            "n_samples": 5042
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 170.75,
+            "euclidean_length": 127.22940083119965,
+            "g2a_outage_mean": 0.4617734067663257,
+            "g2a_outage_max": 0.981,
+            "a2g_sinr_mean_dB": 1.7781351797655969,
+            "a2g_sinr_min_dB": -11.31260506005263,
+            "a2g_rate_mean_Mbps": 1.6371295730005808,
+            "weighted_cost": 195.42667376790084,
+            "n_samples": 5084
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 100.82,
+            "euclidean_length": 221.88138187088327,
+            "g2a_outage_mean": 0.469008793686584,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.343165905966492,
+            "a2g_sinr_min_dB": -14.105757499769956,
+            "a2g_rate_mean_Mbps": 1.7674108100234238,
+            "weighted_cost": 342.42864452311755,
+            "n_samples": 8870
+          }
+        ],
+        "total_euclidean_length": 475.28746316752057,
+        "total_weighted_cost": 740.8999581969757
+      }
+    }
+  },
+  "uav4": {
+    "n_users": 40,
+    "algorithms": {
+      "TSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 0.0,
+            "euclidean_length": 135.9817078058388,
+            "g2a_outage_mean": 0.5422251058347138,
+            "g2a_outage_max": 0.995,
+            "a2g_sinr_mean_dB": 3.1122440302152654,
+            "a2g_sinr_min_dB": -12.00691198298796,
+            "a2g_rate_mean_Mbps": 1.7913177435423175,
+            "weighted_cost": 211.53776539753372,
+            "n_samples": 5433
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 0.0,
+            "euclidean_length": 133.23767573825506,
+            "g2a_outage_mean": 0.45908266015404847,
+            "g2a_outage_max": 0.991,
+            "a2g_sinr_mean_dB": 2.208433909859066,
+            "a2g_sinr_min_dB": -12.087206691347006,
+            "a2g_rate_mean_Mbps": 1.7658625130331727,
+            "weighted_cost": 206.95859127156064,
+            "n_samples": 5323
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 0.0,
+            "euclidean_length": 149.17737593151315,
+            "g2a_outage_mean": 0.4910058695287607,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.504946654262949,
+            "a2g_sinr_min_dB": -14.798013461531273,
+            "a2g_rate_mean_Mbps": 2.0641576148833263,
+            "weighted_cost": 229.23209864601785,
+            "n_samples": 5963
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "time_s": 0.0,
+            "euclidean_length": 161.4078271090622,
+            "g2a_outage_mean": 0.4986090528600217,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 1.4014123530025935,
+            "a2g_sinr_min_dB": -13.18048086010826,
+            "a2g_rate_mean_Mbps": 1.5074274325808443,
+            "weighted_cost": 245.22924453231516,
+            "n_samples": 6451
+          }
+        ],
+        "total_euclidean_length": 579.8045865846692,
+        "total_weighted_cost": 892.9576998474273
+      },
+      "GA": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 16.19,
+            "euclidean_length": 135.9817078058388,
+            "g2a_outage_mean": 0.5426027977176513,
+            "g2a_outage_max": 0.997,
+            "a2g_sinr_mean_dB": 3.110960168367128,
+            "a2g_sinr_min_dB": -11.761664466471798,
+            "a2g_rate_mean_Mbps": 1.7906873403594397,
+            "weighted_cost": 211.7558166251195,
+            "n_samples": 5433
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 16.37,
+            "euclidean_length": 141.85896777515813,
+            "g2a_outage_mean": 0.43578983589200637,
+            "g2a_outage_max": 0.989,
+            "a2g_sinr_mean_dB": 2.192664677437972,
+            "a2g_sinr_min_dB": -12.114044756250067,
+            "a2g_rate_mean_Mbps": 1.7378147779499473,
+            "weighted_cost": 218.80607719238557,
+            "n_samples": 5667
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 16.25,
+            "euclidean_length": 149.17737593151315,
+            "g2a_outage_mean": 0.4913149421432165,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.5074299324865983,
+            "a2g_sinr_min_dB": -14.809325738362288,
+            "a2g_rate_mean_Mbps": 2.0640301050654553,
+            "weighted_cost": 229.36373609334424,
+            "n_samples": 5963
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "time_s": 16.26,
+            "euclidean_length": 161.4078271090622,
+            "g2a_outage_mean": 0.49876639280731677,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 1.3999792081880635,
+            "a2g_sinr_min_dB": -13.159351065439132,
+            "a2g_rate_mean_Mbps": 1.5069808561377602,
+            "weighted_cost": 245.28867645797516,
+            "n_samples": 6451
+          }
+        ],
+        "total_euclidean_length": 588.4258786215723,
+        "total_weighted_cost": 905.2143063688244
+      },
+      "PSO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 4.07,
+            "euclidean_length": 135.9817078058388,
+            "g2a_outage_mean": 0.5421485367200441,
+            "g2a_outage_max": 0.997,
+            "a2g_sinr_mean_dB": 3.115058283508396,
+            "a2g_sinr_min_dB": -11.982021129741657,
+            "a2g_rate_mean_Mbps": 1.7917950646580183,
+            "weighted_cost": 211.53739764055533,
+            "n_samples": 5433
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 4.05,
+            "euclidean_length": 133.23767573825506,
+            "g2a_outage_mean": 0.4591008829607364,
+            "g2a_outage_max": 0.989,
+            "a2g_sinr_mean_dB": 2.210129943531299,
+            "a2g_sinr_min_dB": -11.979169499941856,
+            "a2g_rate_mean_Mbps": 1.766080152354009,
+            "weighted_cost": 206.97188929529062,
+            "n_samples": 5323
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 4.0,
+            "euclidean_length": 149.17737593151315,
+            "g2a_outage_mean": 0.4917071943652524,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.4973396753283295,
+            "a2g_sinr_min_dB": -14.594344376963637,
+            "a2g_rate_mean_Mbps": 2.062565832992397,
+            "weighted_cost": 229.59686566345084,
+            "n_samples": 5963
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "time_s": 4.01,
+            "euclidean_length": 161.4078271090622,
+            "g2a_outage_mean": 0.4987842195008526,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 1.403941726453375,
+            "a2g_sinr_min_dB": -13.240024160881001,
+            "a2g_rate_mean_Mbps": 1.5078082075976014,
+            "weighted_cost": 245.2241009082579,
+            "n_samples": 6451
+          }
+        ],
+        "total_euclidean_length": 579.8045865846692,
+        "total_weighted_cost": 893.3302535075547
+      },
+      "ACO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 1.15,
+            "euclidean_length": 121.51876336365669,
+            "g2a_outage_mean": 0.5312403707518022,
+            "g2a_outage_max": 0.995,
+            "a2g_sinr_mean_dB": 3.12087675293162,
+            "a2g_sinr_min_dB": -11.820949801252944,
+            "a2g_rate_mean_Mbps": 1.8485601600225565,
+            "weighted_cost": 191.64482247930712,
+            "n_samples": 4855
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 1.14,
+            "euclidean_length": 137.5545191592084,
+            "g2a_outage_mean": 0.38542576419213975,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.674919949975587,
+            "a2g_sinr_min_dB": -12.61984839630861,
+            "a2g_rate_mean_Mbps": 2.0467406635385856,
+            "weighted_cost": 205.64832017186632,
+            "n_samples": 5496
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 1.14,
+            "euclidean_length": 140.45683510646688,
+            "g2a_outage_mean": 0.509820805130032,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.6431657577953374,
+            "a2g_sinr_min_dB": -14.547461405564375,
+            "a2g_rate_mean_Mbps": 2.0472632504270707,
+            "weighted_cost": 216.58888188407548,
+            "n_samples": 5614
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "time_s": 1.15,
+            "euclidean_length": 153.9364828223816,
+            "g2a_outage_mean": 0.47196099463676255,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.677755574534025,
+            "a2g_sinr_min_dB": -14.45856718775678,
+            "a2g_rate_mean_Mbps": 1.7399599333276394,
+            "weighted_cost": 236.04637335458827,
+            "n_samples": 6153
+          }
+        ],
+        "total_euclidean_length": 553.4666004517136,
+        "total_weighted_cost": 849.9283978898371
+      },
+      "SingleMapGA": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 110.78,
+            "euclidean_length": 133.24721141500723,
+            "g2a_outage_mean": 0.4490379413974455,
+            "g2a_outage_max": 0.998,
+            "a2g_sinr_mean_dB": 4.088415337782749,
+            "a2g_sinr_min_dB": -11.955989390577775,
+            "a2g_rate_mean_Mbps": 2.0649924862228572,
+            "weighted_cost": 203.36272803627955,
+            "n_samples": 5324
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 85.37,
+            "euclidean_length": 143.75134421861844,
+            "g2a_outage_mean": 0.3808979805013928,
+            "g2a_outage_max": 0.957,
+            "a2g_sinr_mean_dB": 1.2586390607225604,
+            "a2g_sinr_min_dB": -12.132211194605453,
+            "a2g_rate_mean_Mbps": 1.481695740317745,
+            "weighted_cost": 215.5071807579121,
+            "n_samples": 5744
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 115.01,
+            "euclidean_length": 166.92946596864425,
+            "g2a_outage_mean": 0.4699543002697033,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.4671514632926215,
+            "a2g_sinr_min_dB": -14.739175525590877,
+            "a2g_rate_mean_Mbps": 2.022945867477571,
+            "weighted_cost": 252.63250007407035,
+            "n_samples": 6674
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "time_s": 130.24,
+            "euclidean_length": 156.48167417855458,
+            "g2a_outage_mean": 0.45592006394884105,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.468949845611638,
+            "a2g_sinr_min_dB": -14.141952131377716,
+            "a2g_rate_mean_Mbps": 1.7830620519808158,
+            "weighted_cost": 239.29215861377452,
+            "n_samples": 6255
+          }
+        ],
+        "total_euclidean_length": 600.4096957808244,
+        "total_weighted_cost": 910.7945674820365
+      },
+      "GA_EQTSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "time_s": 109.49,
+            "euclidean_length": 136.67774727762662,
+            "g2a_outage_mean": 0.46227101263504855,
+            "g2a_outage_max": 0.999,
+            "a2g_sinr_mean_dB": 3.8931155974056604,
+            "a2g_sinr_min_dB": -10.606141779785458,
+            "a2g_rate_mean_Mbps": 2.04323551478541,
+            "weighted_cost": 211.25018502800248,
+            "n_samples": 5461
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "time_s": 84.96,
+            "euclidean_length": 141.49615453445256,
+            "g2a_outage_mean": 0.39819264107553515,
+            "g2a_outage_max": 0.959,
+            "a2g_sinr_mean_dB": 0.7408519403736605,
+            "a2g_sinr_min_dB": -11.986219268926858,
+            "a2g_rate_mean_Mbps": 1.417921548989336,
+            "weighted_cost": 214.65868665467656,
+            "n_samples": 5653
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "time_s": 118.75,
+            "euclidean_length": 164.28233847055554,
+            "g2a_outage_mean": 0.46091184531059687,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 3.774004498706572,
+            "a2g_sinr_min_dB": -14.375350668709405,
+            "a2g_rate_mean_Mbps": 2.084603866952394,
+            "weighted_cost": 249.90684520163794,
+            "n_samples": 6568
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "time_s": 111.77,
+            "euclidean_length": 166.14359293775544,
+            "g2a_outage_mean": 0.45733639512121665,
+            "g2a_outage_max": 1.0,
+            "a2g_sinr_mean_dB": 2.714374803296484,
+            "a2g_sinr_min_dB": -14.62537663179796,
+            "a2g_rate_mean_Mbps": 1.8583174974028893,
+            "weighted_cost": 249.45019495304692,
+            "n_samples": 6641
+          }
+        ],
+        "total_euclidean_length": 608.5998332203901,
+        "total_weighted_cost": 925.2659118373639
+      }
+    }
+  }
+}

@@ -1,0 +1,497 @@
+{
+  "uav2": {
+    "n_users": 20,
+    "algorithms": {
+      "TSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 185.9425356948268,
+            "g2a_outage_mean": 0.5333680981595093,
+            "a2g_sinr_mean_dB": 2.43182541798021,
+            "time_s": 0.0
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 197.9342716218136,
+            "g2a_outage_mean": 0.4681735173669043,
+            "a2g_sinr_mean_dB": 3.569971200546382,
+            "time_s": 0.0
+          }
+        ],
+        "total_euclidean_length": 383.8768073166404,
+        "mean_g2a_outage": 0.49975365605693284,
+        "mean_a2g_sinr_dB": 3.0186554128545953,
+        "total_time_s": 0.0
+      },
+      "GA": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 185.9425356948268,
+            "g2a_outage_mean": 0.5333821440103326,
+            "a2g_sinr_mean_dB": 2.427130099414623,
+            "time_s": 20.56
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 197.9342716218136,
+            "g2a_outage_mean": 0.46814636735932047,
+            "a2g_sinr_mean_dB": 3.5612518255871266,
+            "time_s": 13.63
+          }
+        ],
+        "total_euclidean_length": 383.8768073166404,
+        "mean_g2a_outage": 0.49974646124970673,
+        "mean_a2g_sinr_dB": 3.011885283637296,
+        "total_time_s": 34.19
+      },
+      "PSO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 185.9425356948268,
+            "g2a_outage_mean": 0.5336325476267356,
+            "a2g_sinr_mean_dB": 2.432498212869318,
+            "time_s": 4.06
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 218.30364875056176,
+            "g2a_outage_mean": 0.4675892464246425,
+            "a2g_sinr_mean_dB": 3.459751018890354,
+            "time_s": 3.96
+          }
+        ],
+        "total_euclidean_length": 404.24618444538856,
+        "mean_g2a_outage": 0.4979673993762068,
+        "mean_a2g_sinr_dB": 2.987242190693837,
+        "total_time_s": 8.02
+      },
+      "ACO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 147.30939487514033,
+            "g2a_outage_mean": 0.504594616639478,
+            "a2g_sinr_mean_dB": 2.517705049552364,
+            "time_s": 1.15
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 181.0131984472177,
+            "g2a_outage_mean": 0.492793864013267,
+            "a2g_sinr_mean_dB": 2.6628754308886506,
+            "time_s": 1.15
+          }
+        ],
+        "total_euclidean_length": 328.322593322358,
+        "mean_g2a_outage": 0.49808661057252607,
+        "mean_a2g_sinr_dB": 2.597765173885436,
+        "total_time_s": 2.3
+      },
+      "GA_EQTSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 176.05050140153065,
+            "g2a_outage_mean": 0.3742613624263507,
+            "a2g_sinr_mean_dB": 4.639480813082189,
+            "time_s": 156.39
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 192.85027064964186,
+            "g2a_outage_mean": 0.351222350371592,
+            "a2g_sinr_mean_dB": 4.373882434765688,
+            "time_s": 112.81
+          }
+        ],
+        "total_euclidean_length": 368.9007720511725,
+        "mean_g2a_outage": 0.3627418563989714,
+        "mean_a2g_sinr_dB": 4.506681623923939,
+        "total_time_s": 269.2
+      }
+    }
+  },
+  "uav3": {
+    "n_users": 30,
+    "algorithms": {
+      "TSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 165.43887307654737,
+            "g2a_outage_mean": 0.5519426289034133,
+            "a2g_sinr_mean_dB": 4.281001552148386,
+            "time_s": 0.0
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 124.0816260925916,
+            "g2a_outage_mean": 0.46131493585088357,
+            "a2g_sinr_mean_dB": 1.8573195290469955,
+            "time_s": 0.0
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 237.9045326000981,
+            "g2a_outage_mean": 0.46103874305906106,
+            "a2g_sinr_mean_dB": 2.4598770060663075,
+            "time_s": 0.0
+          }
+        ],
+        "total_euclidean_length": 527.4250317692371,
+        "mean_g2a_outage": 0.48961242384558445,
+        "mean_a2g_sinr_dB": 2.8892791049248916,
+        "total_time_s": 0.0
+      },
+      "GA": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 165.49518798370354,
+            "g2a_outage_mean": 0.5399030852994555,
+            "a2g_sinr_mean_dB": 4.462238305480632,
+            "time_s": 16.31
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 124.0816260925916,
+            "g2a_outage_mean": 0.4612081820382474,
+            "a2g_sinr_mean_dB": 1.8486023237617402,
+            "time_s": 16.23
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 229.413387519153,
+            "g2a_outage_mean": 0.45561196178510666,
+            "a2g_sinr_mean_dB": 2.319838104637682,
+            "time_s": 1.39
+          }
+        ],
+        "total_euclidean_length": 518.9902015954481,
+        "mean_g2a_outage": 0.48382409443351465,
+        "mean_a2g_sinr_dB": 2.890255307267363,
+        "total_time_s": 33.93
+      },
+      "PSO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 165.49518798370354,
+            "g2a_outage_mean": 0.540083666061706,
+            "a2g_sinr_mean_dB": 4.462692462652445,
+            "time_s": 3.98
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 124.0816260925916,
+            "g2a_outage_mean": 0.4616233357540547,
+            "a2g_sinr_mean_dB": 1.855685854739019,
+            "time_s": 3.96
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 229.413387519153,
+            "g2a_outage_mean": 0.45568655935087027,
+            "a2g_sinr_mean_dB": 2.321716604340161,
+            "time_s": 3.97
+          }
+        ],
+        "total_euclidean_length": 518.9902015954481,
+        "mean_g2a_outage": 0.4840138872815646,
+        "mean_a2g_sinr_dB": 2.8929238692804664,
+        "total_time_s": 11.91
+      },
+      "ACO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 147.3686200865334,
+            "g2a_outage_mean": 0.48869643221202846,
+            "a2g_sinr_mean_dB": 4.89211944224711,
+            "time_s": 1.21
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 140.72884731163498,
+            "g2a_outage_mean": 0.41300554725837424,
+            "a2g_sinr_mean_dB": 3.496851187322318,
+            "time_s": 1.19
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 189.9154751301425,
+            "g2a_outage_mean": 0.48116635041113215,
+            "a2g_sinr_mean_dB": 2.305763283623873,
+            "time_s": 1.15
+          }
+        ],
+        "total_euclidean_length": 478.01294252831093,
+        "mean_g2a_outage": 0.4634147398843931,
+        "mean_a2g_sinr_dB": 3.4535834622291497,
+        "total_time_s": 3.55
+      },
+      "GA_EQTSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 126.17668046543766,
+            "g2a_outage_mean": 0.35636794495645635,
+            "a2g_sinr_mean_dB": 4.671314004987601,
+            "time_s": 121.74
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 127.22940083119965,
+            "g2a_outage_mean": 0.33314672425856007,
+            "a2g_sinr_mean_dB": 4.8284163696071705,
+            "time_s": 170.75
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 221.88138187088327,
+            "g2a_outage_mean": 0.36562105011874485,
+            "a2g_sinr_mean_dB": 4.37387392471694,
+            "time_s": 100.82
+          }
+        ],
+        "total_euclidean_length": 475.28746316752057,
+        "mean_g2a_outage": 0.3517119064445871,
+        "mean_a2g_sinr_dB": 4.624534766437237,
+        "total_time_s": 393.31
+      }
+    }
+  },
+  "uav4": {
+    "n_users": 40,
+    "algorithms": {
+      "TSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 135.9817078058388,
+            "g2a_outage_mean": 0.5422632508833922,
+            "a2g_sinr_mean_dB": 3.111675200577302,
+            "time_s": 0.0
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 133.23767573825506,
+            "g2a_outage_mean": 0.4590514208389716,
+            "a2g_sinr_mean_dB": 2.2027281830184444,
+            "time_s": 0.0
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 149.17737593151315,
+            "g2a_outage_mean": 0.4911894885219493,
+            "a2g_sinr_mean_dB": 3.508810354724234,
+            "time_s": 0.0
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "euclidean_length": 161.4078271090622,
+            "g2a_outage_mean": 0.4984150697674419,
+            "a2g_sinr_mean_dB": 1.4044599139266842,
+            "time_s": 0.0
+          }
+        ],
+        "total_euclidean_length": 579.8045865846692,
+        "mean_g2a_outage": 0.49779982386157584,
+        "mean_a2g_sinr_dB": 2.529673435768237,
+        "total_time_s": 0.0
+      },
+      "GA": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 135.9817078058388,
+            "g2a_outage_mean": 0.5421499558303888,
+            "a2g_sinr_mean_dB": 3.1081284559340823,
+            "time_s": 16.19
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 141.85896777515816,
+            "g2a_outage_mean": 0.4353259212198221,
+            "a2g_sinr_mean_dB": 2.193530599061655,
+            "time_s": 16.37
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 149.17737593151315,
+            "g2a_outage_mean": 0.49118948852194916,
+            "a2g_sinr_mean_dB": 3.5067938792096025,
+            "time_s": 16.25
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "euclidean_length": 161.4078271090622,
+            "g2a_outage_mean": 0.49868967441860473,
+            "a2g_sinr_mean_dB": 1.3994332776739546,
+            "time_s": 16.26
+          }
+        ],
+        "total_euclidean_length": 588.4258786215723,
+        "mean_g2a_outage": 0.4915608187433006,
+        "mean_a2g_sinr_dB": 2.5199402485269284,
+        "total_time_s": 65.07000000000001
+      },
+      "PSO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 135.9817078058388,
+            "g2a_outage_mean": 0.54201148409894,
+            "a2g_sinr_mean_dB": 3.112126857351301,
+            "time_s": 4.07
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 133.23767573825506,
+            "g2a_outage_mean": 0.45946504285069917,
+            "a2g_sinr_mean_dB": 2.207972769765191,
+            "time_s": 4.05
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 149.17737593151315,
+            "g2a_outage_mean": 0.4911163914619412,
+            "a2g_sinr_mean_dB": 3.5098794025922873,
+            "time_s": 4.0
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "euclidean_length": 161.4078271090622,
+            "g2a_outage_mean": 0.49839348837209296,
+            "a2g_sinr_mean_dB": 1.4018608891853377,
+            "time_s": 4.01
+          }
+        ],
+        "total_euclidean_length": 579.8045865846692,
+        "mean_g2a_outage": 0.497810962026628,
+        "mean_a2g_sinr_dB": 2.530535412312596,
+        "total_time_s": 16.130000000000003
+      },
+      "ACO": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 121.51876336365669,
+            "g2a_outage_mean": 0.5317825012357884,
+            "a2g_sinr_mean_dB": 3.1185680774728164,
+            "time_s": 1.15
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 137.5545191592084,
+            "g2a_outage_mean": 0.3855267525660624,
+            "a2g_sinr_mean_dB": 3.676548891755848,
+            "time_s": 1.14
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 140.45683510646688,
+            "g2a_outage_mean": 0.5102705882352941,
+            "a2g_sinr_mean_dB": 3.6449489119871896,
+            "time_s": 1.14
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "euclidean_length": 153.93648282238163,
+            "g2a_outage_mean": 0.4720682926829269,
+            "a2g_sinr_mean_dB": 2.673217854029297,
+            "time_s": 1.15
+          }
+        ],
+        "total_euclidean_length": 553.4666004517136,
+        "mean_g2a_outage": 0.4733668385345997,
+        "mean_a2g_sinr_dB": 3.2669211116551042,
+        "total_time_s": 4.58
+      },
+      "GA_EQTSP": {
+        "clusters": [
+          {
+            "cluster_id": 0,
+            "n_nodes": 10,
+            "euclidean_length": 136.67774727762662,
+            "g2a_outage_mean": 0.3494426884066655,
+            "a2g_sinr_mean_dB": 4.288215662920716,
+            "time_s": 109.49
+          },
+          {
+            "cluster_id": 1,
+            "n_nodes": 10,
+            "euclidean_length": 141.49615453445256,
+            "g2a_outage_mean": 0.3545507994339686,
+            "a2g_sinr_mean_dB": 4.148099288060199,
+            "time_s": 84.96
+          },
+          {
+            "cluster_id": 2,
+            "n_nodes": 10,
+            "euclidean_length": 164.28233847055554,
+            "g2a_outage_mean": 0.36174711447717917,
+            "a2g_sinr_mean_dB": 4.057058120332599,
+            "time_s": 118.75
+          },
+          {
+            "cluster_id": 3,
+            "n_nodes": 10,
+            "euclidean_length": 166.14359293775544,
+            "g2a_outage_mean": 0.3489587846296927,
+            "a2g_sinr_mean_dB": 4.193178909917588,
+            "time_s": 111.77
+          }
+        ],
+        "total_euclidean_length": 608.5998332203901,
+        "mean_g2a_outage": 0.3536748467368765,
+        "mean_a2g_sinr_dB": 4.171637995307775,
+        "total_time_s": 424.96999999999997
+      }
+    }
+  }
+}
