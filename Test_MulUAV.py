@@ -12,6 +12,7 @@ from MATD3 import MATD3
 from MultiUAVWorld import MultiUAVWorld
 from utils import wrap_angle, heuristic_action, refine_action, mkdir
 from scenario_config import get_scenario
+from sequence_utils import compute_sequence, load_cluster_labels, recluster_kmeans
 
 
 TRAJECTORY_PROFILES = {
@@ -195,6 +196,8 @@ def test_matd3_model(
     max_turn_deg=None,
     drop_targets_per_uav=0,
     random_layout=False,
+    sequence_algorithm='PSO',
+    recluster=False,
 ):
     """
     测试MA-TD3模型
@@ -237,12 +240,17 @@ def test_matd3_model(
     if assignment_mode not in ('sequence', 'hybrid', 'dynamic'):
         raise ValueError(f"不支持的 assignment_mode: {assignment_mode}")
 
-    # 随机布局下固定序列无意义，自动切换为动态分配
+    # 随机布局下：若指定了序列算法则保持 sequence 模式并动态规划，否则回退到 dynamic
     if random_layout and assignment_mode != 'dynamic':
-        print(f"[提示] random_layout=True 时固定序列无意义，自动切换 assignment_mode: {assignment_mode} -> dynamic")
-        assignment_mode = 'dynamic'
+        if sequence_algorithm:
+            print(f"[提示] random_layout=True + sequence_algorithm={sequence_algorithm}，使用动态规划序列")
+        else:
+            print(f"[提示] random_layout=True 且未指定序列算法，自动切换 assignment_mode: {assignment_mode} -> dynamic")
+            assignment_mode = 'dynamic'
+    elif sequence_algorithm and not random_layout:
+        print(f"[提示] sequence_algorithm={sequence_algorithm}，使用动态规划序列（保持原始巡检点位置）")
 
-    cfg = get_scenario(uav_num, assignment_mode, sequence_algorithm='PSO')
+    cfg = get_scenario(uav_num, assignment_mode, sequence_algorithm=sequence_algorithm)
     user_num = cfg['user_num']
     Length = cfg['length']
     Width = cfg['width']
@@ -272,6 +280,8 @@ def test_matd3_model(
     print(f"最大转向角: {max_turn_deg}")
     print(f"每UAV丢弃目标数: {drop_targets_per_uav}")
     print(f"随机布局: {random_layout}")
+    print(f"序列算法: {sequence_algorithm}")
+    print(f"重新聚类: {recluster}")
     print("="*80 + "\n")
 
     # 创建多无人机环境
@@ -296,7 +306,28 @@ def test_matd3_model(
         drop_targets_per_uav=drop_targets_per_uav,
         random_layout=random_layout
     )
-    
+
+    # sequence_algorithm: 每轮 reset 时动态规划序列（可与 random_layout 组合或独立使用）
+    if sequence_algorithm:
+        cluster_labels = load_cluster_labels(uav_num)
+        seq_alg = sequence_algorithm
+        _ini_loc = np.array(ini_loc)
+        _end_loc = np.array(end_loc)
+        _recluster = recluster
+        _uav_num = uav_num
+
+        def _on_reset_callback(w):
+            """在位置随机化后，根据新位置重新计算巡检序列。"""
+            positions = np.array([[u.x, u.y, u.z] for u in w.Users])
+            if _recluster:
+                cur_labels = recluster_kmeans(positions, _uav_num)
+            else:
+                cur_labels = cluster_labels
+            new_traverse = compute_sequence(positions, cur_labels, seq_alg, _ini_loc, _end_loc)
+            w.set_uav_traverse(new_traverse)
+
+        world.set_on_reset_callback(_on_reset_callback)
+
     # 初始化MA-TD3
     matd3 = MATD3(
         n_agents=uav_num,
@@ -327,7 +358,9 @@ def test_matd3_model(
     Complete_time = np.zeros(test_episodes)
     Total_rewards = np.zeros(test_episodes)
     Completed_targets = np.zeros(test_episodes)
-    
+    UAV_Completion_time = np.full((test_episodes, uav_num), np.nan)  # 每UAV完成时间
+    UAV_Energy = np.zeros((test_episodes, uav_num))  # 每UAV能耗 (飞行距离)
+
     # 多无人机轨迹记录
     x_uav_all = np.zeros([test_episodes, uav_num, T+1])
     y_uav_all = np.zeros([test_episodes, uav_num, T+1])
@@ -469,8 +502,11 @@ def test_matd3_model(
         effective_steps = np.array([s['effective_t'] for s in path_stats], dtype=np.int32)
         path_lengths = np.array([s['path_len'] for s in path_stats], dtype=np.float32)
         path_efficiency = np.array([s['efficiency'] for s in path_stats], dtype=np.float32)
+        UAV_Completion_time[episode] = effective_steps
+        UAV_Energy[episode] = path_lengths
         print(f"有效轨迹步数: {effective_steps.tolist()}")
         print(f"路径效率: {[round(float(v), 3) for v in path_efficiency]}")
+        print(f"UAV能耗: {[round(float(v), 2) for v in path_lengths]} (100m单位)")
         
         # 保存单个episode的轨迹数据
         trajectory_file = f'results/datas/trajectory/MultiUAV_uav{uav_num}_ep{episode}.npz'
@@ -493,7 +529,9 @@ def test_matd3_model(
             uav_traverse=[world.uav_traverse[i] for i in range(uav_num)],
             completed_set=list(world.completed_targets),
             dropped_targets=str(world.dropped_targets_log) if world.drop_targets_per_uav > 0 else '',
-            random_layout=world.random_layout
+            random_layout=world.random_layout,
+            uav_completion_time=effective_steps,
+            uav_energy=path_lengths,
         )
         print(f"✓ 轨迹数据已保存: {trajectory_file}")
         
@@ -518,15 +556,27 @@ def test_matd3_model(
     print(f"平均完成目标: {np.mean(Completed_targets):.1f}/{user_num}")
     print(f"最佳完成: {int(np.max(Completed_targets))}/{user_num}")
     print(f"最差完成: {int(np.min(Completed_targets))}/{user_num}")
+    print(f"\n平均UAV完成时间 (步数):")
+    uav_avg_time = np.nanmean(UAV_Completion_time, axis=0)
+    uav_std_time = np.nanstd(UAV_Completion_time, axis=0)
+    for i in range(uav_num):
+        print(f"  UAV {i}: {uav_avg_time[i]:.1f} ± {uav_std_time[i]:.1f}")
+    print(f"\n平均UAV能耗 (100m单位):")
+    uav_avg_energy = np.mean(UAV_Energy, axis=0)
+    uav_std_energy = np.std(UAV_Energy, axis=0)
+    for i in range(uav_num):
+        print(f"  UAV {i}: {uav_avg_energy[i]:.2f} ± {uav_std_energy[i]:.2f}")
     if drop_targets_per_uav > 0:
-        print(f"每UAV丢弃目标数: {drop_targets_per_uav}")
+        print(f"\n每UAV丢弃目标数: {drop_targets_per_uav}")
     print("="*80)
 
    # 绘制统计图表，保存到当前 UAV 的 result 目录下
     plot_test_statistics(
         Complete_time, Total_rewards, Completed_targets,
         success_count, test_episodes, user_num,
-        result_path
+        result_path,
+        UAV_Completion_time=UAV_Completion_time,
+        UAV_Energy=UAV_Energy,
     )
     
     # 保存完整测试数据
@@ -542,6 +592,8 @@ def test_matd3_model(
         Complete_time=Complete_time,
         Total_rewards=Total_rewards,
         Completed_targets=Completed_targets,
+        UAV_Completion_time=UAV_Completion_time,
+        UAV_Energy=UAV_Energy,
         success_count=success_count,
         test_episodes=test_episodes
     )
@@ -560,8 +612,12 @@ def test_matd3_model(
 
 def plot_test_statistics(Complete_time, Total_rewards, Completed_targets,
                          success_count, test_episodes, total_targets,
-                         save_path):
+                         save_path, UAV_Completion_time=None, UAV_Energy=None):
     """绘制测试统计图表"""
+    # 支持中文标题
+    plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans']
+    plt.rcParams['axes.unicode_minus'] = False
+
     fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     
     # 1. 完成时间
@@ -643,10 +699,46 @@ def plot_test_statistics(Complete_time, Total_rewards, Completed_targets,
     ax4.set_title('综合性能指标', fontsize=14, fontweight='bold')
     ax4.set_ylim([0, 110])
     ax4.grid(alpha=0.3, axis='y')
-    
+
     plt.tight_layout()
     plt.savefig(f'{save_path}test_statistics.png', dpi=150, bbox_inches='tight')
     plt.close()
+
+    # 5. 单独绘制 per-UAV 统计图
+    if UAV_Completion_time is not None and UAV_Energy is not None:
+        fig2, axes2 = plt.subplots(1, 2, figsize=(16, 6))
+
+        uav_num_val = UAV_Completion_time.shape[1]
+        uav_labels = [f'UAV {i}' for i in range(uav_num_val)]
+        uav_avg_times = np.nanmean(UAV_Completion_time, axis=0)
+        uav_avg_energies = np.mean(UAV_Energy, axis=0)
+
+        ax_t = axes2[0]
+        bars_t = ax_t.bar(uav_labels, uav_avg_times,
+                          color=['#5B9BD5', '#ED7D31', '#70AD47', '#FFC000'][:uav_num_val],
+                          edgecolor='black', linewidth=1.5)
+        for bar, v in zip(bars_t, uav_avg_times):
+            ax_t.text(bar.get_x() + bar.get_width()/2., bar.get_height(),
+                      f'{v:.1f}', ha='center', va='bottom', fontsize=12, fontweight='bold')
+        ax_t.set_ylabel('步数', fontsize=12)
+        ax_t.set_title('平均UAV完成时间', fontsize=14, fontweight='bold')
+        ax_t.grid(alpha=0.3, axis='y')
+
+        ax_e = axes2[1]
+        bars_e = ax_e.bar(uav_labels, uav_avg_energies,
+                          color=['#5B9BD5', '#ED7D31', '#70AD47', '#FFC000'][:uav_num_val],
+                          edgecolor='black', linewidth=1.5)
+        for bar, v in zip(bars_e, uav_avg_energies):
+            ax_e.text(bar.get_x() + bar.get_width()/2., bar.get_height(),
+                      f'{v:.2f}', ha='center', va='bottom', fontsize=12, fontweight='bold')
+        ax_e.set_ylabel('距离 (100m单位)', fontsize=12)
+        ax_e.set_title('平均UAV能耗', fontsize=14, fontweight='bold')
+        ax_e.grid(alpha=0.3, axis='y')
+
+        plt.tight_layout()
+        plt.savefig(f'{save_path}test_uav_stats.png', dpi=150, bbox_inches='tight')
+        plt.close()
+        print(f"✓ 每UAV统计图已保存: {save_path}test_uav_stats.png")
     
     print(f"✓ 统计图表已保存: {save_path}test_statistics.png")
 
@@ -656,7 +748,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='测试MA-TD3多无人机模型')
-    parser.add_argument('--model_episode', type=str, default='auto',
+    parser.add_argument('--model_episode', type=str, default='best',
                        help='模型版本 (auto/stable/best/final/数字)')
     parser.add_argument('--uav_num', type=int, default=3,   # 🔥 默认修改为 3
                        help='无人机数量')
@@ -689,6 +781,10 @@ if __name__ == "__main__":
                        help='每个无人机随机丢弃的目标点数量 (鲁棒性测试，0=不丢弃)')
     parser.add_argument('--random_layout', action='store_true',
                        help='随机化巡检点空间分布 (鲁棒性测试)')
+    parser.add_argument('--sequence_algorithm', type=str, default='PSO',
+                       help='random_layout模式下的序列优化算法 (GA/GA_EQTSP/PSO/ACO)')
+    parser.add_argument('--recluster', action='store_true',
+                       help='random_layout模式下重新聚类（K-means），而非保持原聚类分配')
 
     args = parser.parse_args()
     
@@ -710,6 +806,8 @@ if __name__ == "__main__":
         max_turn_deg=args.max_turn_deg,
         drop_targets_per_uav=args.drop_targets,
         random_layout=args.random_layout,
+        sequence_algorithm=args.sequence_algorithm,
+        recluster=args.recluster,
     )
     
     print("\n" + "="*80)

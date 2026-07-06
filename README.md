@@ -137,7 +137,8 @@ python Train_MulUAV.py --uav_num 4 --model_subdir Ours
 | `--near_target_radius` | `None` | 手动覆盖近目标强修正半径，单位为百米。如果不传，则使用档位默认值。 |
 | `--max_turn_deg` | `None` | 手动覆盖单步最大转向角，单位为度。如果不传，则使用档位默认值。 |
 | `--drop_targets` | `0` | 鲁棒性测试：每架无人机每轮随机丢弃的目标点数量。`0` 表示不丢弃。每轮 `reset()` 时独立随机采样。 |
-| `--random_layout` | 默认关闭 | 鲁棒性测试：随机化巡检点空间分布。加上该 flag 后，每轮 `reset()` 时所有巡检点坐标在环境范围内重新随机生成，且自动切换为 `dynamic` 分配模式。 |
+| `--random_layout` | 默认关闭 | 鲁棒性测试：随机化巡检点空间分布。加上该 flag 后，每轮 `reset()` 时所有巡检点坐标在环境范围内重新随机生成。若同时指定 `--sequence_algorithm`，则保持 `sequence` 模式并动态规划序列；否则自动切换为 `dynamic` 分配模式。 |
+| `--sequence_algorithm` | `PSO` | `random_layout` 模式下的序列优化算法。可选 `GA`、`GA_EQTSP`、`PSO`、`ACO`。仅在 `--random_layout` 开启时生效。 |
 
 `trajectory_profile` 档位说明：
 
@@ -187,7 +188,19 @@ python Test_MulUAV.py --uav_num 2 --model_subdir PSO --test_episodes 10 --drop_t
 python Test_MulUAV.py --uav_num 2 --model_subdir PSO --test_episodes 10 --random_layout
 ```
 
-两种模式也可以组合使用：
+**模式三：随机分布 + 动态规划序列**
+
+每轮随机化巡检点位置后，调用序列优化算法（GA/GA_EQTSP/PSO/ACO）为当前随机分布重新计算最优巡检序列，然后用 `sequence` 模式执行。测试的是模型对"重新规划后的最优序列"的执行能力。
+
+```powershell
+# 随机分布 + PSO 重新规划序列
+python Test_MulUAV.py --uav_num 2 --model_subdir PSO --test_episodes 10 --random_layout --sequence_algorithm PSO
+
+# 随机分布 + GA_EQTSP 重新规划序列（通信感知，较慢）
+python Test_MulUAV.py --uav_num 2 --model_subdir PSO --test_episodes 10 --random_layout --sequence_algorithm GA_EQTSP
+```
+
+模式之间也可以组合使用：
 
 ```powershell
 python Test_MulUAV.py --uav_num 2 --model_subdir PSO --test_episodes 10 --random_layout --drop_targets 2

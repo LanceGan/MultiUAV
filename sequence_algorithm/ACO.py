@@ -172,6 +172,7 @@ class ACO(object):
 
     def run(self):
         best_length, best_path = self.aco()
+        self.best_path = best_path
         return self.location[best_path], best_length
 
 

@@ -99,7 +99,7 @@ def compute_trajectory_from_sequence(sequence, all_points, cluster_labels, clust
 def draw_radio_map(ax, radio_map):
     """Draw radio map background on axes."""
     if radio_map == "G2A":
-        npzfile = np.load("results/datas/radiomap/Radio_datas.npz")
+        npzfile = np.load("results/datas/radiomap/Radio_datas_G2A.npz")
         value = 1 - npzfile["arr_0"]
         x_vec = npzfile["arr_2"]
         y_vec = npzfile["arr_3"]

@@ -126,6 +126,7 @@ class MultiUAVWorld(object):
         self.original_uav_traverse = {i: list(seq) for i, seq in self.uav_traverse.items()}
         self.drop_targets_per_uav = drop_targets_per_uav
         self.dropped_targets_log = {}
+        self._on_reset_callback = None  # reset 回调（用于 random_layout 下动态规划序列）
 
         self.completed_targets = set()  # 已完成的目标点
         
@@ -191,6 +192,23 @@ class MultiUAVWorld(object):
         """为每个无人机分配初始目标点（不需要提前指定巡检序列）"""
         for uav_id in range(self.uav_num):
             self._assign_next_target(uav_id)
+
+    def set_uav_traverse(self, uav_traverse_dict):
+        """动态更新巡检序列（用于 random_layout 模式下每轮重新规划）。
+
+        Args:
+            uav_traverse_dict: dict[int, list[int]] — {uav_id: [target_idx, ...]}
+        """
+        self.uav_traverse = uav_traverse_dict
+        self.original_uav_traverse = {i: list(seq) for i, seq in uav_traverse_dict.items()}
+
+    def set_on_reset_callback(self, callback):
+        """设置 reset 回调，在位置随机化之后、目标分配之前调用。
+
+        callback 签名: callback(world) -> None
+        典型用途：在 random_layout 模式下，根据随机化后的位置重新计算巡检序列。
+        """
+        self._on_reset_callback = callback
             
 
     def reset(self):
@@ -202,6 +220,10 @@ class MultiUAVWorld(object):
             for user in self.Users:
                 user.x = np.random.uniform(0, self.length)
                 user.y = np.random.uniform(0, self.width)
+
+        # 回调：在位置随机化后、目标分配前，允许外部重新计算巡检序列
+        if self._on_reset_callback is not None:
+            self._on_reset_callback(self)
 
         # 重置分配/完成状态（先清空再分配）
         self.completed_targets = set() #重置已完成目标集
