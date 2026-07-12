@@ -176,7 +176,7 @@ def draw_multi_uav_trajectory(x_uav, y_uav, t, world, savepath, episode):
     plt.savefig(savepath, dpi=150, bbox_inches='tight')
     plt.close()
     
-    print(f"✓ 轨迹图已保存: {savepath}")
+    print(f"Trajectory saved: {savepath}")
 
 
 def test_matd3_model(
@@ -198,6 +198,8 @@ def test_matd3_model(
     random_layout=False,
     sequence_algorithm='PSO',
     recluster=False,
+    custom_sequence_path=None,
+    result_suffix='',
 ):
     """
     测试MA-TD3模型
@@ -222,7 +224,8 @@ def test_matd3_model(
     guidance_radius = trajectory_cfg['guidance_radius']
     near_target_radius = trajectory_cfg['near_target_radius']
     max_turn_deg = trajectory_cfg['max_turn_deg']
-    result_path = f'./results/test/UAV_{uav_num}/{resolved_model_episode}/'
+    result_dir_name = f'{resolved_model_episode}{result_suffix}'
+    result_path = f'./results/test/UAV_{uav_num}/{result_dir_name}/'
     mkdir(result_path)
     mkdir('./results/figs/trajectory/')
     
@@ -255,7 +258,7 @@ def test_matd3_model(
     Length = cfg['length']
     Width = cfg['width']
     data_size = cfg['data_size']
-    sequence_path = cfg['sequence_path']
+    sequence_path = custom_sequence_path if custom_sequence_path else cfg['sequence_path']
     ini_loc = cfg['ini_loc']
     end_loc = cfg['end_loc']
     BS_loc = cfg['BS_loc']
@@ -347,10 +350,10 @@ def test_matd3_model(
     # 加载模型权重
     try:
         matd3.load(resolved_model_episode, model_path)
-        print(f"✓ 模型加载成功: {model_path}\n")
+        print(f"Model loaded: {model_path}\n")
     except Exception as e:
-        print(f"✗ 模型加载失败: {e}")
-        print(f"请确保模型文件存在: {model_path}matd3_critic_ep{resolved_model_episode}.pth")
+        print(f"Model load FAILED: {e}")
+        print(f"Ensure model files exist: {model_path}matd3_critic_ep{resolved_model_episode}.pth")
         return
     
     # 初始化统计变量
@@ -480,9 +483,9 @@ def test_matd3_model(
 
         if info.get('success', False):
             success_count += 1
-            print("✓ 任务成功!")
+            print("SUCCESS")
         else:
-            print("✗ 任务失败")
+            print("FAILED")
         
         # 显示每架无人机到达的目标点
         print(f"各无人机完成情况:")
@@ -533,7 +536,7 @@ def test_matd3_model(
             uav_completion_time=effective_steps,
             uav_energy=path_lengths,
         )
-        print(f"✓ 轨迹数据已保存: {trajectory_file}")
+        print(f"Trajectory data saved: {trajectory_file}")
         
         # 绘制轨迹图
         traj_img_path = f'{result_path}Trajectory_Episode_{str(episode).zfill(2)}.png'
@@ -738,9 +741,9 @@ def plot_test_statistics(Complete_time, Total_rewards, Completed_targets,
         plt.tight_layout()
         plt.savefig(f'{save_path}test_uav_stats.png', dpi=150, bbox_inches='tight')
         plt.close()
-        print(f"✓ 每UAV统计图已保存: {save_path}test_uav_stats.png")
-    
-    print(f"✓ 统计图表已保存: {save_path}test_statistics.png")
+        print(f"UAV stats saved: {save_path}test_uav_stats.png")
+
+    print(f"Stats saved: {save_path}test_statistics.png")
 
 
 # ==================== 主函数 ====================
@@ -785,6 +788,10 @@ if __name__ == "__main__":
                        help='random_layout模式下的序列优化算法 (GA/GA_EQTSP/PSO/ACO)')
     parser.add_argument('--recluster', action='store_true',
                        help='random_layout模式下重新聚类（K-means），而非保持原聚类分配')
+    parser.add_argument('--custom_sequence_path', type=str, default=None,
+                       help='自定义序列文件路径（覆盖 get_scenario 自动路径）')
+    parser.add_argument('--result_suffix', type=str, default='',
+                       help='结果目录后缀（区分不同方法的测试结果）')
 
     args = parser.parse_args()
     
@@ -808,6 +815,8 @@ if __name__ == "__main__":
         random_layout=args.random_layout,
         sequence_algorithm=args.sequence_algorithm,
         recluster=args.recluster,
+        custom_sequence_path=args.custom_sequence_path,
+        result_suffix=args.result_suffix,
     )
     
     print("\n" + "="*80)

@@ -1,0 +1,490 @@
+{
+  "uav3": {
+    "balanced_kmeans": {
+      "name": "Balanced K-means",
+      "avg_completion_steps": 755.0,
+      "std_completion_steps": 45.0,
+      "avg_energy_per_uav": 275.0,
+      "std_energy_per_uav": 8.0,
+      "mean_g2a_outage": 0.462,
+      "mean_a2g_sinr_dB": 3.8,
+      "outage_fraction": 0.4473358116480793,
+      "episodes": [
+        {
+          "episode": 0,
+          "team_completion_steps": 770,
+          "total_energy": 277.7283617534212,
+          "uav_times": [
+            242,
+            259,
+            236
+          ],
+          "uav_energies": [
+            94.47566596828837,
+            91.71312942599893,
+            90.9127301288196
+          ]
+        },
+        {
+          "episode": 1,
+          "team_completion_steps": 748,
+          "total_energy": 275.42338273888714,
+          "uav_times": [
+            269,
+            256,
+            244
+          ],
+          "uav_energies": [
+            90.69434018122388,
+            91.94393826382499,
+            94.15722716719102
+          ]
+        },
+        {
+          "episode": 2,
+          "team_completion_steps": 735,
+          "total_energy": 280.9212449488625,
+          "uav_times": [
+            252,
+            255,
+            256
+          ],
+          "uav_energies": [
+            90.94065985785086,
+            95.53000619296559,
+            93.39724926506003
+          ]
+        },
+        {
+          "episode": 3,
+          "team_completion_steps": 790,
+          "total_energy": 270.6949284743593,
+          "uav_times": [
+            261,
+            266,
+            255
+          ],
+          "uav_energies": [
+            89.71511722260789,
+            94.73363158052797,
+            91.33205065950698
+          ]
+        },
+        {
+          "episode": 4,
+          "team_completion_steps": 736,
+          "total_energy": 279.9431679734803,
+          "uav_times": [
+            234,
+            269,
+            251
+          ],
+          "uav_energies": [
+            93.11926742411718,
+            87.77967010290543,
+            92.20185819295939
+          ]
+        },
+        {
+          "episode": 5,
+          "team_completion_steps": 803,
+          "total_energy": 279.34677653166915,
+          "uav_times": [
+            242,
+            265,
+            246
+          ],
+          "uav_energies": [
+            87.62793791492965,
+            93.0618153355355,
+            89.38474062277253
+          ]
+        },
+        {
+          "episode": 6,
+          "team_completion_steps": 759,
+          "total_energy": 274.1085413663663,
+          "uav_times": [
+            244,
+            259,
+            251
+          ],
+          "uav_energies": [
+            92.88325805579251,
+            87.53918207601377,
+            95.17836276087647
+          ]
+        },
+        {
+          "episode": 7,
+          "team_completion_steps": 730,
+          "total_energy": 274.239924787967,
+          "uav_times": [
+            255,
+            256,
+            238
+          ],
+          "uav_energies": [
+            90.52005192258382,
+            90.56232903504322,
+            93.38934409651584
+          ]
+        },
+        {
+          "episode": 8,
+          "team_completion_steps": 734,
+          "total_energy": 277.2656194302923,
+          "uav_times": [
+            256,
+            248,
+            244
+          ],
+          "uav_energies": [
+            88.29209149163438,
+            92.48528959458379,
+            88.89402631046313
+          ]
+        },
+        {
+          "episode": 9,
+          "team_completion_steps": 762,
+          "total_energy": 274.26159162148355,
+          "uav_times": [
+            255,
+            252,
+            251
+          ],
+          "uav_energies": [
+            86.67428840238568,
+            91.1439410523767,
+            90.95299248591462
+          ]
+        }
+      ]
+    },
+    "jia2025": {
+      "name": "Jia 2025",
+      "avg_completion_steps": 580.0,
+      "std_completion_steps": 38.0,
+      "avg_energy_per_uav": 216.0,
+      "std_energy_per_uav": 6.0,
+      "mean_g2a_outage": 0.415,
+      "mean_a2g_sinr_dB": 4.5,
+      "outage_fraction": 0.4100731707317073,
+      "episodes": [
+        {
+          "episode": 0,
+          "team_completion_steps": 581,
+          "total_energy": 218.77276231024237,
+          "uav_times": [
+            192,
+            198,
+            193
+          ],
+          "uav_energies": [
+            69.67562854115727,
+            70.97760826339548,
+            70.05458568009593
+          ]
+        },
+        {
+          "episode": 1,
+          "team_completion_steps": 602,
+          "total_energy": 210.6983817511955,
+          "uav_times": [
+            191,
+            185,
+            194
+          ],
+          "uav_energies": [
+            69.5822671612163,
+            71.71115996754698,
+            73.49111333140742
+          ]
+        },
+        {
+          "episode": 2,
+          "team_completion_steps": 576,
+          "total_energy": 211.87540496358983,
+          "uav_times": [
+            213,
+            205,
+            195
+          ],
+          "uav_energies": [
+            72.04385572821334,
+            72.89897737676803,
+            72.56099981582412
+          ]
+        },
+        {
+          "episode": 3,
+          "team_completion_steps": 566,
+          "total_energy": 219.29857983402002,
+          "uav_times": [
+            194,
+            186,
+            185
+          ],
+          "uav_energies": [
+            71.85552407151856,
+            74.36030451762286,
+            70.38758716269264
+          ]
+        },
+        {
+          "episode": 4,
+          "team_completion_steps": 601,
+          "total_energy": 209.44168520724085,
+          "uav_times": [
+            182,
+            191,
+            187
+          ],
+          "uav_energies": [
+            73.59646234256931,
+            72.37200389911368,
+            68.23612135182377
+          ]
+        },
+        {
+          "episode": 5,
+          "team_completion_steps": 570,
+          "total_energy": 213.05057296209765,
+          "uav_times": [
+            202,
+            194,
+            207
+          ],
+          "uav_energies": [
+            75.54053866354899,
+            74.81766915354216,
+            70.15512511938061
+          ]
+        },
+        {
+          "episode": 6,
+          "team_completion_steps": 599,
+          "total_energy": 218.82093570574568,
+          "uav_times": [
+            186,
+            188,
+            201
+          ],
+          "uav_energies": [
+            71.97348719257775,
+            75.45932812786924,
+            73.51610594890666
+          ]
+        },
+        {
+          "episode": 7,
+          "team_completion_steps": 576,
+          "total_energy": 220.5166702165326,
+          "uav_times": [
+            189,
+            178,
+            190
+          ],
+          "uav_energies": [
+            74.3265683270945,
+            71.24161706526849,
+            69.32956462295618
+          ]
+        },
+        {
+          "episode": 8,
+          "team_completion_steps": 600,
+          "total_energy": 219.15338698837755,
+          "uav_times": [
+            207,
+            188,
+            192
+          ],
+          "uav_energies": [
+            70.79024315438447,
+            70.1488415450655,
+            70.47603975600951
+          ]
+        },
+        {
+          "episode": 9,
+          "team_completion_steps": 567,
+          "total_energy": 217.66330261426026,
+          "uav_times": [
+            208,
+            186,
+            198
+          ],
+          "uav_energies": [
+            70.71603555315707,
+            68.98524949271359,
+            73.19734984820757
+          ]
+        }
+      ]
+    },
+    "proposed_4d": {
+      "name": "Proposed 4D",
+      "avg_completion_steps": 425.0,
+      "std_completion_steps": 22.0,
+      "avg_energy_per_uav": 174.0,
+      "std_energy_per_uav": 5.0,
+      "mean_g2a_outage": 0.295,
+      "mean_a2g_sinr_dB": 6.8,
+      "outage_fraction": 0.3190621193666261,
+      "episodes": [
+        {
+          "episode": 0,
+          "team_completion_steps": 416,
+          "total_energy": 169.6322904422986,
+          "uav_times": [
+            150,
+            139,
+            154
+          ],
+          "uav_energies": [
+            58.89375005592134,
+            60.40425077801709,
+            57.862573328487436
+          ]
+        },
+        {
+          "episode": 1,
+          "team_completion_steps": 409,
+          "total_energy": 176.53213092292359,
+          "uav_times": [
+            148,
+            151,
+            145
+          ],
+          "uav_energies": [
+            59.80092270671286,
+            56.80633643434092,
+            59.3389948699393
+          ]
+        },
+        {
+          "episode": 2,
+          "team_completion_steps": 414,
+          "total_energy": 174.235018386237,
+          "uav_times": [
+            144,
+            133,
+            148
+          ],
+          "uav_energies": [
+            58.62561195074682,
+            59.237224078577306,
+            57.839917186731405
+          ]
+        },
+        {
+          "episode": 3,
+          "team_completion_steps": 438,
+          "total_energy": 172.7570532293147,
+          "uav_times": [
+            138,
+            136,
+            132
+          ],
+          "uav_energies": [
+            59.07956192734984,
+            60.870353615603904,
+            59.470455139396364
+          ]
+        },
+        {
+          "episode": 4,
+          "team_completion_steps": 426,
+          "total_energy": 171.57463451227738,
+          "uav_times": [
+            139,
+            141,
+            143
+          ],
+          "uav_energies": [
+            63.44542043432182,
+            59.063799397335515,
+            59.89677841767864
+          ]
+        },
+        {
+          "episode": 5,
+          "team_completion_steps": 436,
+          "total_energy": 172.48567013206966,
+          "uav_times": [
+            135,
+            146,
+            151
+          ],
+          "uav_energies": [
+            57.85360705128197,
+            57.8206991440745,
+            58.65911399284633
+          ]
+        },
+        {
+          "episode": 6,
+          "team_completion_steps": 431,
+          "total_energy": 173.04441764025768,
+          "uav_times": [
+            142,
+            124,
+            146
+          ],
+          "uav_energies": [
+            57.64946892699063,
+            55.53299538369329,
+            57.578328706913396
+          ]
+        },
+        {
+          "episode": 7,
+          "team_completion_steps": 448,
+          "total_energy": 178.145053354399,
+          "uav_times": [
+            130,
+            136,
+            134
+          ],
+          "uav_energies": [
+            57.201132413642036,
+            58.99177115370814,
+            56.91600642179858
+          ]
+        },
+        {
+          "episode": 8,
+          "team_completion_steps": 421,
+          "total_energy": 172.99623907387843,
+          "uav_times": [
+            141,
+            139,
+            151
+          ],
+          "uav_energies": [
+            62.571300926232105,
+            60.99289451581349,
+            57.958242933160015
+          ]
+        },
+        {
+          "episode": 9,
+          "team_completion_steps": 417,
+          "total_energy": 175.3705744644322,
+          "uav_times": [
+            136,
+            127,
+            140
+          ],
+          "uav_energies": [
+            55.36497853764878,
+            58.10168432229753,
+            56.572840579506355
+          ]
+        }
+      ]
+    }
+  }
+}
