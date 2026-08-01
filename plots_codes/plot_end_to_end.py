@@ -80,22 +80,26 @@ for col, mk in enumerate(MET_KEYS):
         order = seq[cid]
         local_order = [int(np.where(gim == gi)[0][0]) for gi in order]
         wp = cpts[local_order]
-        all_pts = np.vstack([ini.reshape(1,2), wp[:,:2], end.reshape(1,2)])
-        seg_lens = np.linalg.norm(np.diff(all_pts, axis=0), axis=1)
+        waypoints = np.vstack([ini.reshape(1,2), wp[:,:2], end.reshape(1,2)])
+        seg_lens = np.linalg.norm(np.diff(waypoints, axis=0), axis=1)
         total_seg = seg_lens.sum()
-        uav_steps = max(30, int(total_steps / 3 * (0.3 + 0.7 * total_seg / max(total_seg, 1e-8))))
+        uav_steps = max(50, int(total_steps / 3))
 
-        tr = [ini]
-        seg_steps = np.maximum(3, (seg_lens / total_seg * uav_steps * 0.7).astype(int))
+        tr = []
+        seg_steps = np.maximum(8, (seg_lens / total_seg * uav_steps * 0.75).astype(int))
         d = uav_steps - seg_steps.sum()
-        if len(seg_steps) > 0: seg_steps[0] += d
+        if len(seg_steps) > 0: seg_steps[-1] += d
         for i in range(len(seg_lens)):
-            a, b = all_pts[i], all_pts[i+1]
-            for t in np.linspace(0, 1, max(3, seg_steps[i])):
-                pt = a + t*(b-a)
-                perp = np.array([-(b-a)[1], (b-a)[0]]); perp = perp/max(np.linalg.norm(perp),1e-8)
-                tr.append(pt + perp*RNG.normal(0,0.03))
-        tr.append(all_pts[-1]); tr = np.array(tr)
+            a = waypoints[i]; b = waypoints[i+1]
+            mid = (a + b) / 2
+            perp = np.array([-(b-a)[1], (b-a)[0]])
+            perp = perp / max(np.linalg.norm(perp), 1e-8) * np.linalg.norm(b-a) * 0.08
+            ctrl = mid + perp * RNG.normal(0, 1.5)
+            n = max(8, seg_steps[i])
+            for t in np.linspace(0, 1, n):
+                pt = (1-t)**2 * a + 2*(1-t)*t * ctrl + t**2 * b
+                tr.append(pt)
+        tr.append(waypoints[-1]); tr = np.array(tr)
         ax.plot(tr[:,0], tr[:,1], '-', color=UAV_COLORS[cid], linewidth=2.2, alpha=0.9, zorder=4)
 
     ax.scatter(*ini, c='green', marker='s', s=120, edgecolors='black', linewidth=1.2, zorder=5, label='Start')
